@@ -22,7 +22,7 @@ jobs:
           ARTIFACT_URL: "https://sdmntpraustraliaeast.oaiusercontent.com/files/00000000-cd04-81fa-a6e7-f838ed3c7529/raw?se=2026-08-20T02%3A20%3A18Z&sp=r&sv=2026-02-06&sr=b&scid=cc530686-04d1-59e8-9098-75d99d1220b8&skoid=f5e14fda-2af7-44a3-9d18-d372ffcad871&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-19T23%3A44%3A28Z&ske=2026-08-20T23%3A44%3A28Z&sks=b&skv=2026-02-06&sig=vYU%2BVC0xhd7tz/zgVpUfh1kF7P1MCrRvZGntoKQimuo%3D"
         run: |
           curl -fL --retry 3 "$ARTIFACT_URL" -o artifact.zip
-          unzip artifact.zip
+          unzip -o artifact.zip
           test -f CCFA-v0.9.0-debug.apk
           echo '5ffee4ecf9ce5ebac970591f83a3138f931209cb37a451308f447556b0ded189  CCFA-v0.9.0-debug.apk' | sha256sum -c -
           printf '%s  %s\n' '5ffee4ecf9ce5ebac970591f83a3138f931209cb37a451308f447556b0ded189' 'CCFA-v0.9.0-debug.apk' > CCFA-v0.9.0-debug.apk.sha256
@@ -59,18 +59,45 @@ jobs:
           `5ffee4ecf9ce5ebac970591f83a3138f931209cb37a451308f447556b0ded189`
           EOF
 
-      - name: Create GitHub Release and tag
+      - name: Create or verify GitHub Release and tag
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view v0.9.0 >/dev/null 2>&1; then
-            echo 'v0.9.0 release already exists.'
-            exit 0
+          if ! gh release view v0.9.0 --repo hatake716/CCFA >/dev/null 2>&1; then
+            gh release create v0.9.0 \
+              CCFA-v0.9.0-debug.apk \
+              CCFA-v0.9.0-debug.apk.sha256 \
+              --repo hatake716/CCFA \
+              --target 7a6b9b4d6a239daa03af5f2c36a6029a2107cf5d \
+              --title 'CCFA v0.9.0' \
+              --notes-file RELEASE_NOTES.md
           fi
-          gh release create v0.9.0 \
-            CCFA-v0.9.0-debug.apk \
-            CCFA-v0.9.0-debug.apk.sha256 \
-            --repo hatake716/CCFA \
-            --target 7a6b9b4d6a239daa03af5f2c36a6029a2107cf5d \
-            --title 'CCFA v0.9.0' \
-            --notes-file RELEASE_NOTES.md
+          gh release view v0.9.0 --repo hatake716/CCFA --json tagName,name,url,isDraft,isPrerelease > release.json
+          gh release download v0.9.0 --repo hatake716/CCFA --pattern 'CCFA-v0.9.0-debug.apk' --dir verify
+          echo '5ffee4ecf9ce5ebac970591f83a3138f931209cb37a451308f447556b0ded189  verify/CCFA-v0.9.0-debug.apk' | sha256sum -c -
+
+      - name: Record verified release status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          URL="$(gh release view v0.9.0 --repo hatake716/CCFA --json url --jq .url)"
+          git fetch origin main
+          git checkout -B main origin/main
+          cat > RELEASE_STATUS.md <<EOF
+          # Release status
+
+          CCFA v0.9.0 has been published and its APK asset was downloaded back from GitHub Releases and SHA-256 verified by GitHub Actions.
+
+          - Tag: \`v0.9.0\`
+          - Source commit: \`7a6b9b4d6a239daa03af5f2c36a6029a2107cf5d\`
+          - APK: \`CCFA-v0.9.0-debug.apk\`
+          - SHA-256: \`5ffee4ecf9ce5ebac970591f83a3138f931209cb37a451308f447556b0ded189\`
+          - Release: $URL
+          EOF
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE_STATUS.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'Record verified v0.9.0 release'
+            git push origin main
+          fi
