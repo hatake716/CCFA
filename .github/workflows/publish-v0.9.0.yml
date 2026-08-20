@@ -1,0 +1,76 @@
+name: Publish v0.9.0
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.repository == 'hatake716/CCFA'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v6
+        with:
+          ref: 7a6b9b4d6a239daa03af5f2c36a6029a2107cf5d
+
+      - name: Download tested APK artifact
+        env:
+          ARTIFACT_URL: "https://sdmntpraustraliaeast.oaiusercontent.com/files/00000000-cd04-81fa-a6e7-f838ed3c7529/raw?se=2026-08-20T02%3A20%3A18Z&sp=r&sv=2026-02-06&sr=b&scid=cc530686-04d1-59e8-9098-75d99d1220b8&skoid=f5e14fda-2af7-44a3-9d18-d372ffcad871&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-08-19T23%3A44%3A28Z&ske=2026-08-20T23%3A44%3A28Z&sks=b&skv=2026-02-06&sig=vYU%2BVC0xhd7tz/zgVpUfh1kF7P1MCrRvZGntoKQimuo%3D"
+        run: |
+          curl -fL --retry 3 "$ARTIFACT_URL" -o artifact.zip
+          unzip artifact.zip
+          test -f CCFA-v0.9.0-debug.apk
+          echo '5ffee4ecf9ce5ebac970591f83a3138f931209cb37a451308f447556b0ded189  CCFA-v0.9.0-debug.apk' | sha256sum -c -
+          printf '%s  %s\n' '5ffee4ecf9ce5ebac970591f83a3138f931209cb37a451308f447556b0ded189' 'CCFA-v0.9.0-debug.apk' > CCFA-v0.9.0-debug.apk.sha256
+
+      - name: Write release notes
+        run: |
+          cat > RELEASE_NOTES.md <<'EOF'
+          # CCFA v0.9.0
+
+          Initial public release of **CCFA (日本語入力対応Linuxコンテナ)**.
+
+          ## Main features
+          - Android-only Linux container environment; external Termux app is not required
+          - In-app PTY terminal with Japanese IME composition support
+          - ARM64 Android support
+          - Multiple Linux rootfs containers
+          - Adjustable terminal font size and PC-oriented extra keys
+          - Configurable Android storage sharing
+          - Default mappings: `Download -> /phone/Downloads`, `Documents -> /phone/Documents`
+          - Shared `/workspace` for project files
+          - No vendor-specific AI CLI is bundled or automatically installed
+
+          ## Advanced use: AI agents
+          Terminal-based AI agents can be installed manually inside the Linux environment. Check each provider's official website/documentation and follow its current Linux installation and authentication instructions.
+
+          ## Requirements
+          - Android 8.0 / API 26 or later
+          - ARM64 / arm64-v8a device
+
+          ## APK signature
+          This v0.9.0 binary is the tested **debug-signed sideload build** produced during development. If a future release switches to a dedicated release signing key, Android may require uninstalling the debug-signed build before installing that future release.
+
+          ## SHA-256
+          `5ffee4ecf9ce5ebac970591f83a3138f931209cb37a451308f447556b0ded189`
+          EOF
+
+      - name: Create GitHub Release and tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v0.9.0 >/dev/null 2>&1; then
+            echo 'v0.9.0 release already exists.'
+            exit 0
+          fi
+          gh release create v0.9.0 \
+            CCFA-v0.9.0-debug.apk \
+            CCFA-v0.9.0-debug.apk.sha256 \
+            --repo hatake716/CCFA \
+            --target 7a6b9b4d6a239daa03af5f2c36a6029a2107cf5d \
+            --title 'CCFA v0.9.0' \
+            --notes-file RELEASE_NOTES.md
