@@ -16,7 +16,7 @@ CCFA does not automatically scan unrelated Android storage folders. A configured
 
 CCFA uses network access for Linux-environment setup, including downloading the Linux Base image from its upstream provider and installing ordinary Linux packages requested by the user.
 
-CCFA v0.9.0 does **not** automatically download, install, repair, log in to, or authenticate a proprietary third-party AI CLI. It does not obtain or proxy a third-party provider's OAuth token, API key, subscription credential, account entitlement, or rate limit.
+CCFA v1.0.0 does **not** automatically download, install, repair, log in to, or authenticate a proprietary third-party AI CLI. It does not obtain or proxy a third-party provider's OAuth token, API key, subscription credential, account entitlement, or rate limit.
 
 ## Third-party software installed by the user
 

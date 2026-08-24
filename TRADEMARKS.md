@@ -8,7 +8,7 @@ CCFA does not use third-party logos in its launcher icon. References to third-pa
 
 In particular:
 
-- `Claude`, `Claude Code`, and `Anthropic` are not part of the CCFA product name. CCFA v0.9.0 does not automatically install, authenticate, or broker credentials for Anthropic software. If a user installs such software manually, the user's relationship and authentication are directly with that provider under its current terms.
+- `Claude`, `Claude Code`, and `Anthropic` are not part of the CCFA product name. CCFA v1.0.0 does not automatically install, authenticate, or broker credentials for Anthropic software. If a user installs such software manually, the user's relationship and authentication are directly with that provider under its current terms.
 - `Ubuntu` is used only to identify the upstream Linux Base image currently downloaded by the user's device. It is not part of the CCFA product name.
 - `Termux` is used to identify upstream open-source terminal/runtime components and package sources. The external Termux application is not required by CCFA.
 - `Apache` and Apache project names are used only for attribution and component identification required by the applicable open-source licenses/notices.

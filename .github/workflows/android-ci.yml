@@ -65,7 +65,7 @@ jobs:
       - name: Verify distribution APK
         run: |
           SRC=app/build/outputs/apk/debug/app-debug.apk
-          OUT=app/build/outputs/apk/debug/CCFA-v0.9.0-debug.apk
+          OUT=app/build/outputs/apk/debug/CCFA-v1.0.0-debug.apk
           test -f "$SRC"
           unzip -l "$SRC" | grep 'lib/arm64-v8a/libproot.so'
           unzip -l "$SRC" | grep 'lib/arm64-v8a/libproot-loader.so'
@@ -82,9 +82,9 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ccfa-v0.9.0-distribution-debug
+          name: ccfa-v1.0.0-distribution-debug
           if-no-files-found: error
           retention-days: 14
           path: |
-            app/build/outputs/apk/debug/CCFA-v0.9.0-debug.apk
-            app/build/outputs/apk/debug/CCFA-v0.9.0-debug.apk.sha256
+            app/build/outputs/apk/debug/CCFA-v1.0.0-debug.apk
+            app/build/outputs/apk/debug/CCFA-v1.0.0-debug.apk.sha256

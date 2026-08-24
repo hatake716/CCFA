@@ -76,7 +76,7 @@ Ubuntu Base is **not bundled or redistributed inside the CCFA APK**. When the us
 
 ## Optional third-party AI CLI software
 
-No proprietary third-party AI CLI is bundled in the repository or APK, and CCFA v0.9.0 does not automatically download, install, repair, log in to, or broker credentials for such software.
+No proprietary third-party AI CLI is bundled in the repository or APK, and CCFA v1.0.0 does not automatically download, install, repair, log in to, or broker credentials for such software.
 
 If a user wants a third-party AI CLI, the user must install and authenticate it manually from the ordinary Linux shell according to that provider's current documentation, terms, privacy policy, supported-region rules, authentication requirements, and other applicable conditions.
 

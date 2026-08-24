@@ -24,7 +24,7 @@ Do not present CCFA as an official product of Anthropic, Canonical, Termux, Samb
 
 ## Third-party AI CLI software
 
-CCFA v0.9.0 does not automatically download, install, repair, authenticate, log in to, or broker credentials for proprietary third-party AI CLI software.
+CCFA v1.0.0 does not automatically download, install, repair, authenticate, log in to, or broker credentials for proprietary third-party AI CLI software.
 
 Users who choose to use a third-party AI CLI install and authenticate it manually from the ordinary Linux shell under that provider's current terms and documentation.
 
