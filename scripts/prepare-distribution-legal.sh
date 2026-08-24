@@ -12,7 +12,16 @@ mkdir -p "$LICENSES" "$SOURCES" "$RECIPES"
 fetch() {
   local url="$1" out="$2"
   echo "Fetching $url"
-  curl -fL --retry 3 --retry-delay 2 "$url" -o "$out"
+  # 接続確立まで20秒で打ち切り、失敗接続もリトライ対象に含めて多めに再試行する。
+  # 外部ホスト(例: www.gnu.org)が断続的に不調でも、133秒待ちで固まらず素早く再試行できる。
+  curl -fL \
+    --connect-timeout 20 \
+    --max-time 180 \
+    --retry 6 \
+    --retry-delay 3 \
+    --retry-connrefused \
+    --retry-all-errors \
+    "$url" -o "$out"
   test -s "$out"
 }
 
