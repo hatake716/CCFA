@@ -1,4 +1,4 @@
-# CCFA Architecture — v0.9.0
+# CCFA Architecture — v1.0.0
 
 ## Overview
 

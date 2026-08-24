@@ -73,8 +73,8 @@ android {
         applicationId = "io.github.hatake716.claudecodeandroid"
         minSdk = 26
         targetSdk = 28
-        versionCode = 18
-        versionName = "0.9.0"
+        versionCode = 19
+        versionName = "1.0.0"
     }
 
     compileOptions {
