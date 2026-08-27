@@ -87,6 +87,8 @@ val verifyDistributionLegal by tasks.registering {
         "sources/libandroid-shmem-v0.7.tar.gz.source",
         "sources/talloc-2.4.3.tar.gz.source",
         "sources/ccfa-prepare-termux-android-proot.sh",
+        "sources/termux-terminal-emulator-v0.118.0-termux.c",
+        "sources/ccfa-build-terminal-emulator-16k.sh",
         "SOURCE-AND-LICENSE-MANIFEST.sha256"
     )
     inputs.files(required.map { legalDir.file(it) })
@@ -194,7 +196,14 @@ android {
 }
 
 dependencies {
-    implementation("com.termux.termux-app:terminal-view:0.118.0")
+    // terminal-view は Maven の terminal-emulator を引き込むが、その arm64-v8a libtermux.so は
+    // PT_LOAD p_align=4K で Google Play の 16KiB page alignment チェックに落ちるため除外し、
+    // 同じ v0.118.0 ソースを -z max-page-size=16384 で再ビルドした AAR を同梱する。
+    // （再生成: scripts/build-terminal-emulator-16k.sh）
+    implementation("com.termux.termux-app:terminal-view:0.118.0") {
+        exclude(group = "com.termux.termux-app", module = "terminal-emulator")
+    }
+    implementation(files("libs/terminal-emulator-0.118.0-16k.aar"))
     implementation("org.apache.commons:commons-compress:1.27.1")
     // SAF ツリーの再帰走査に DocumentFile を使う（scoped storage 準拠の共有同期）。
     implementation("androidx.documentfile:documentfile:1.0.1")

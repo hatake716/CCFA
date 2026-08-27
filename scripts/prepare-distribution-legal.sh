@@ -50,11 +50,18 @@ verify_sha256 "1e5ff8459bc0a8c229dd8a94b27d119987e09ef3414331c2b5ebfff20b98e867"
 fetch "https://www.samba.org/ftp/talloc/talloc-2.4.3.tar.gz" "$SOURCES/talloc-2.4.3.tar.gz.source"
 verify_sha256 "dc46c40b9f46bb34dd97fe41f548b0e8b247b77a918576733c528e83abd854dd" "$SOURCES/talloc-2.4.3.tar.gz.source"
 
+# terminal-emulator v0.118.0 の JNI ソース。app/libs/terminal-emulator-0.118.0-16k.aar 内蔵の
+# libtermux.so (arm64-v8a) はこの termux.c を scripts/build-terminal-emulator-16k.sh が
+# 16KiB page alignment でコンパイルした再ビルド版である。
+fetch "https://raw.githubusercontent.com/termux/termux-app/v0.118.0/terminal-emulator/src/main/jni/termux.c" "$SOURCES/termux-terminal-emulator-v0.118.0-termux.c"
+verify_sha256 "729112f2e66cdddb7e7311ddf8a89ad54037a54bddbf4d5291f2e1fff5b97373" "$SOURCES/termux-terminal-emulator-v0.118.0-termux.c"
+
 BASE="https://raw.githubusercontent.com/termux/termux-packages/$TERMUX_PACKAGES_COMMIT/packages"
 fetch "$BASE/proot/build.sh" "$RECIPES/proot-build.sh"
 fetch "$BASE/libandroid-shmem/build.sh" "$RECIPES/libandroid-shmem-build.sh"
 fetch "$BASE/libtalloc/build.sh" "$RECIPES/libtalloc-build.sh"
 cp "$ROOT/scripts/prepare-termux-android-proot.sh" "$SOURCES/ccfa-prepare-termux-android-proot.sh"
+cp "$ROOT/scripts/build-terminal-emulator-16k.sh" "$SOURCES/ccfa-build-terminal-emulator-16k.sh"
 
 cat > "$SOURCES/README.txt" <<EOF
 CCFA corresponding-source bundle
@@ -63,6 +70,12 @@ This directory is intentionally embedded in distributed CCFA APKs so recipients 
 native GPL/LGPL components receive the corresponding upstream source archives alongside
 the object code. The CCFA packaging script used to select, verify and alter ELF metadata
 is included as ccfa-prepare-termux-android-proot.sh.
+
+The terminal-emulator JNI library (libtermux.so, arm64-v8a) shipped inside
+terminal-emulator-0.118.0-16k.aar is a rebuild of the included
+termux-terminal-emulator-v0.118.0-termux.c with 16KiB ELF page alignment (required by
+Google Play); the build script is included as ccfa-build-terminal-emulator-16k.sh and no
+other part of the upstream v0.118.0 terminal-emulator sources was modified.
 
 Android AAPT can ignore assets ending in .gz. For that reason these exact gzip archives
 are stored with a trailing .source suffix inside the APK:
