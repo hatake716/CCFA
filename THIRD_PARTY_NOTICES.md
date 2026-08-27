@@ -6,7 +6,7 @@ CCFA is an independent project. It is not endorsed by, affiliated with, or spons
 
 - Project name: CCFA (日本語入力対応Linuxコンテナ)
 - License: Apache License 2.0
-- The historical Android `applicationId` is retained only for upgrade compatibility.
+- The Google Play build uses the `io.github.hatake716.ccfa` applicationId; the sideload build retains the historical `io.github.hatake716.claudecodeandroid` id, and the source package/namespace keeps the historical name in both builds.
 
 ## Termux PRoot runtime
 

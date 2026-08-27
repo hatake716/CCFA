@@ -1,7 +1,7 @@
 # CCFA privacy disclosure
 
 Effective date: 2026-08-27
-Application: CCFA (package `io.github.hatake716.claudecodeandroid`)
+Application: CCFA (package `io.github.hatake716.ccfa`)
 Published policy URL: https://hatake716.github.io/CCFA/privacy.html
 
 CCFA itself does not operate an analytics, telemetry, advertising, account, or cloud-sync server. CCFA does not collect, transmit, sell, or share personal data with the developer or any third party.
@@ -44,7 +44,7 @@ CCFA does not collect personal data from any user, including children.
 
 ## Distribution channels
 
-This policy describes the Google Play build. The separately distributed sideload build (GitHub Releases) differs in one respect: it uses Android's all-files-access permission and binds user-configured Android folders directly into the Linux container instead of SAF mirror sync. It performs no additional data collection.
+This policy describes the Google Play build (package `io.github.hatake716.ccfa`). The separately distributed sideload build (GitHub Releases, historical package `io.github.hatake716.claudecodeandroid`) differs in one respect: it uses Android's all-files-access permission and binds user-configured Android folders directly into the Linux container instead of SAF mirror sync. It performs no additional data collection.
 
 ## Changes and contact
 

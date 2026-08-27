@@ -111,7 +111,9 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.hatake716.claudecodeandroid"
+        // Play 版のアプリケーションID。コード側のパッケージ/namespace は歴史的経緯で
+        // claudecodeandroid のまま(公開IDとは独立しており、変更の必要がない)。
+        applicationId = "io.github.hatake716.ccfa"
         minSdk = 26
         // Google Play は新規アプリ/更新に最新ターゲット API を要求する（2026-08-31 以降は
         // Android 16 / API 36 以上）。sideload 版が使っていた targetSdk 28 は提出できない。
