@@ -1,22 +1,26 @@
 # CCFA privacy disclosure
 
-CCFA itself does not operate an analytics, telemetry, advertising, account, or cloud-sync server.
+Effective date: 2026-08-27
+Application: CCFA (package `io.github.hatake716.claudecodeandroid`)
+Published policy URL: https://hatake716.github.io/CCFA/privacy.html
+
+CCFA itself does not operate an analytics, telemetry, advertising, account, or cloud-sync server. CCFA does not collect, transmit, sell, or share personal data with the developer or any third party.
 
 ## Data CCFA accesses locally
 
-- App-private Linux container files and `/workspace`.
-- Android storage folders explicitly enabled in **ストレージ共有設定** when the user grants the required storage access.
-- By default those folders are Android `Download` and `Documents`.
-- The user may disable those defaults or configure additional Android filesystem paths and Linux `/phone/...` mount points.
+- App-private Linux container files and `/workspace` (both inside the app-private storage area, `Context.filesDir`).
 - Local terminal input/output needed to operate the in-app PTY.
+- Android folders that the user explicitly selects with the system folder picker (Storage Access Framework, `ACTION_OPEN_DOCUMENT_TREE`) in **ストレージ共有設定**. No Android folder is shared until the user selects one; the persisted folder permission can be revoked by the user at any time by disabling or removing the mapping.
 
-CCFA does not automatically scan unrelated Android storage folders. A configured shared folder becomes visible to programs running inside the Linux container while that mapping is enabled and accessible.
+Selected folders are not mounted into the Linux container. Instead, when the user runs a sync, their contents are mirror-copied between the selected Android folder and `/workspace/phone/<name>` inside the app-private area (bidirectional, import-only, or export-only, as configured). Programs inside the Linux container can read whatever has been copied into `/workspace` while the mapping is enabled.
+
+CCFA does not scan unrelated Android storage. It holds no broad storage permission: the Google Play build requests only `INTERNET`.
 
 ## Network access performed by CCFA
 
-CCFA uses network access for Linux-environment setup, including downloading the Linux Base image from its upstream provider and installing ordinary Linux packages requested by the user.
+CCFA uses network access only for Linux-environment setup started by the user: downloading the Linux Base image from its upstream provider (Canonical's `cdimage.ubuntu.com`) and installing ordinary Linux packages the user requests (for example via `apt`, which contacts the configured package mirrors directly).
 
-CCFA v1.0.0 does **not** automatically download, install, repair, log in to, or authenticate a proprietary third-party AI CLI. It does not obtain or proxy a third-party provider's OAuth token, API key, subscription credential, account entitlement, or rate limit.
+CCFA does **not** automatically download, install, repair, log in to, or authenticate a proprietary third-party AI CLI. It does not obtain or proxy a third-party provider's OAuth token, API key, subscription credential, account entitlement, or rate limit.
 
 ## Third-party software installed by the user
 
@@ -28,7 +32,26 @@ Such traffic is governed by that third party's terms, privacy policy, account se
 
 Credentials created or stored by software that the user manually installs inside the Linux container remain inside the app-private Linux filesystem unless that software itself transmits, exports, or writes them elsewhere. CCFA does not intentionally inspect, upload, sell, or broker those credentials.
 
-Removing a Linux container deletes that container rootfs. Shared `/workspace` and Android storage folders configured as bind mounts are separate and are not deleted by container deletion.
+## Data deletion
+
+- Removing a Linux container deletes that container rootfs.
+- `/workspace` (including `/workspace/phone/` mirror copies) is app-private and is deleted when the app is uninstalled.
+- Files in the Android folders the user selected for sharing live outside the app and remain under the user's control; CCFA only changes them when the user runs a sync whose direction writes to them.
+
+## Children
+
+CCFA does not collect personal data from any user, including children.
+
+## Distribution channels
+
+This policy describes the Google Play build. The separately distributed sideload build (GitHub Releases) differs in one respect: it uses Android's all-files-access permission and binds user-configured Android folders directly into the Linux container instead of SAF mirror sync. It performs no additional data collection.
+
+## Changes and contact
+
+Changes to this policy are published at the URL above with an updated effective date.
+
+- Developer: hatake716 (individual developer)
+- Contact: https://github.com/hatake716/CCFA/issues (or the developer contact address shown on the Google Play store listing)
 
 ## Distribution note
 

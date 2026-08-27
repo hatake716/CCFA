@@ -2,7 +2,9 @@ package io.github.hatake716.claudecodeandroid
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
@@ -10,6 +12,7 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 
 /** Displays legal notices and bundled license texts directly from APK assets. */
 class LegalActivity : Activity() {
@@ -50,6 +53,27 @@ class LegalActivity : Activity() {
             setTextColor(this@LegalActivity.text)
             setLineSpacing(0f, 1.15f)
         })
+
+        content.addView(TextView(this).apply {
+            this.text = "プライバシーポリシー"
+            textSize = 19f
+            setTypeface(typeface, Typeface.BOLD)
+            setTextColor(this@LegalActivity.text)
+            setPadding(0, dp(20), 0, dp(6))
+        })
+        content.addView(TextView(this).apply {
+            this.text =
+                "CCFA自体が解析・広告・テレメトリー・アカウント等によるデータ収集を行うことはありません。" +
+                    "詳細は公開中のプライバシーポリシーを参照してください。"
+            textSize = 13.5f
+            setTextColor(this@LegalActivity.text)
+            setLineSpacing(0f, 1.15f)
+        })
+        content.addView(Button(this).apply {
+            this.text = "プライバシーポリシーを開く（Web）"
+            isAllCaps = false
+            setOnClickListener { openPrivacyPolicy() }
+        }, top(dp(6)))
 
         content.addView(TextView(this).apply {
             this.text = "同梱ライセンス / NOTICE"
@@ -118,6 +142,14 @@ class LegalActivity : Activity() {
         })
     }
 
+    private fun openPrivacyPolicy() {
+        runCatching {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_POLICY_URL)))
+        }.onFailure {
+            Toast.makeText(this, "ブラウザを起動できませんでした: $PRIVACY_POLICY_URL", Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun showDocument(document: LegalDocument) {
         val body = readAsset(document.assetPath)
         val textView = TextView(this).apply {
@@ -145,4 +177,8 @@ class LegalActivity : Activity() {
     ).apply { topMargin = value }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    private companion object {
+        const val PRIVACY_POLICY_URL = "https://hatake716.github.io/CCFA/privacy.html"
+    }
 }
