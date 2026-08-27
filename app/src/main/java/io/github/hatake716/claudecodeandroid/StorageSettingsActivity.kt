@@ -61,7 +61,7 @@ class StorageSettingsActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = page
         window.navigationBarColor = page
-        setContentView(buildView())
+        setContentView(buildView().also { it.applyEdgeToEdgeInsets(includeIme = true) })
         render(StorageShareManager.load(this))
     }
 

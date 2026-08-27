@@ -87,14 +87,16 @@ class EmbeddedTerminalActivity : Activity(), TerminalSessionClient, TerminalView
         window.navigationBarColor = pageColor
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         fontSizePx = loadFontSizePx()
-        setContentView(buildView())
+        setContentView(buildView().also { it.applyEdgeToEdgeInsets(includeIme = true) })
         startRequestedSession()
     }
 
     private fun buildView(): View {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(terminalColor)
+            // edge-to-edge のインセット帯（ステータスバー裏・IME/ナビバー裏）に
+            // 見える色。ヘッダーとコンポーザーの背景に合わせてページ色にする。
+            setBackgroundColor(pageColor)
         }
 
         val header = LinearLayout(this).apply {

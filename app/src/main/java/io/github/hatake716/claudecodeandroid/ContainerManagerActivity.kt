@@ -44,7 +44,7 @@ class ContainerManagerActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = page
         window.navigationBarColor = page
-        setContentView(buildView())
+        setContentView(buildView().also { it.applyEdgeToEdgeInsets() })
     }
 
     override fun onResume() {

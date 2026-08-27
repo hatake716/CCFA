@@ -122,7 +122,7 @@ android {
         // requestLegacyExternalStorage と旧来の WRITE_EXTERNAL_STORAGE は無効化される。
         // 共有ストレージは SAF ベースへ移行する必要がある（docs/PLAY-RELEASE.md の TODO 参照）。
         targetSdk = 36
-        versionCode = 19
+        versionCode = 20
         versionName = "1.0.0"
 
         // arm64-v8a 専用ランタイム。AAB の ABI 分割で余計な split を作らないよう明示。

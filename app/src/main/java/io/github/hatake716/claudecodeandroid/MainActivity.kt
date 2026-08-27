@@ -41,7 +41,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = page
         window.navigationBarColor = page
-        setContentView(buildView())
+        setContentView(buildView().also { it.applyEdgeToEdgeInsets() })
         EmbeddedRuntimeManager.ensureHostRuntime(this)
     }
 

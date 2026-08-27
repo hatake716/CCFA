@@ -139,6 +139,7 @@ class LegalActivity : Activity() {
         setContentView(ScrollView(this).apply {
             setBackgroundColor(page)
             addView(content)
+            applyEdgeToEdgeInsets()
         })
     }
 
