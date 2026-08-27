@@ -84,12 +84,27 @@ gradle :app:bundleRelease
 
 ---
 
-## 残課題（提出前に必ず対応）— 重要
+## 実機検証結果（2026-08-27 / Pixel 10a・Android 17・targetSdk 36）— 完了
 
-このブランチはビルド構成を Play 準拠にしたが、**次の 2 点は
-アーキテクチャに関わる本質的課題**であり、実機検証が必須。
+かつて「残課題」としていた本質的課題は、実機で検証済み:
 
-### 1. W^X — targetSdk 36 での PRoot / rootfs バイナリ実行（最重要）
+- **W^X**: 検証済み・問題なし。コンテナ作成 → PRoot 起動 → bash / dpkg /
+  apt / perl / git / curl がすべて targetSdk 36 実機で動作。rootfs 内バイナリは
+  PRoot の ptrace ローダ経由で実行され、SELinux の exec 拒否は発生しない。
+- **16KB ページサイズ**: 対応済み。同梱 5 つの .so（proot / loader / talloc /
+  shmem / 再ビルド版 libtermux）すべて LOAD align=0x4000 を確認。
+  CI の «Verify bundled .so are 16 KB page aligned» が毎ビルド検証する。
+- **SAF ストレージ共有**: 実機で往復確認済み。SAF フォルダ選択 → 取込同期 →
+  Linux 側で読み書き → 書出同期 → Android 側反映まで動作。
+- **初回セットアップの必須修正**: targetSdk 36 実機で、初回 apt が perl-base の
+  ハードリンク展開で必ず失敗するバグを発見・修正済み（PRoot へ渡すホストパスの
+  canonicalPath 統一。詳細は EmbeddedRuntimeManager の canonical() コメントと
+  該当コミット参照）。**PRoot 呼び出しに新しいホストパスを渡すときは必ず
+  canonical() を通すこと。**
+
+以下は当時の調査メモ（経緯の記録として保持）。
+
+### 1. W^X — targetSdk 36 での PRoot / rootfs バイナリ実行（検証済み・OK）
 
 Android 10 (API 29)+ かつ targetSdk 29+ では、アプリのデータ領域
 (`/data/data/<pkg>/`) に書き込んだファイルの直接 `execve()` が
@@ -114,7 +129,7 @@ SELinux ポリシーで拒否される（W^X）。CCFA は targetSdk を 28→36
 参考: termux-packages wiki「Termux and Android 10」「Termux execution environment」、
 developer.android.com/about/versions/10/behavior-changes-10。
 
-### 2. 16 KB ページサイズ（ネイティブ .so）
+### 2. 16 KB ページサイズ（ネイティブ .so）（対応済み）
 
 targetSdk 35+ かつネイティブ .so 同梱アプリは、全 .so が
 **16 KB ページアライン（LOAD セグメント align = 2\*\*14）** でないと
@@ -140,7 +155,7 @@ bundletool dump config --bundle=app-release.aab | grep alignment  # PAGE_ALIGNME
 パッケージが 16KB アライン済みか確認し、未対応なら 16KB 対応版の取得元へ
 切り替えるか、`build-proot-loader.sh` を NDK r28+ でビルドする。
 
-### 3. ストレージ共有の SAF 移行（実装済み・要実機確認）
+### 3. ストレージ共有の SAF 移行（実装済み・実機確認済み）
 
 `MANAGE_EXTERNAL_STORAGE` を撤去し、`SafSyncManager` による SAF 双方向
 ミラー同期へ移行済み（scoped storage 準拠）。
