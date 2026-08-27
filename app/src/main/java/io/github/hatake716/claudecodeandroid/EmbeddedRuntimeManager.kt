@@ -52,6 +52,26 @@ object EmbeddedRuntimeManager {
     fun containerDir(context: Context, name: String) = File(containersDir(context), name)
     fun rootfsDir(context: Context, name: String) = File(containerDir(context, name), "rootfs")
 
+    /**
+     * PRoot へ渡すホストパスの正規形。
+     *
+     * 現代の Android では Context.filesDir が "/data/user/0/<pkg>/..." を返す一方、
+     * カーネル/bionic の realpath はアプリのマウント名前空間で同じ場所を
+     * "/data/data/<pkg>/..." と名付けることがある(端末・バージョン依存)。
+     * PRoot は --rootfs を起動時に realpath で正規化するが、PROOT_L2S_DIR は
+     * 環境変数の文字列をそのまま使う。両者の綴りが食い違うと、link2symlink が
+     * 生成する疑似ハードリンク(絶対パスのシンボリックリンク)を PRoot 自身が
+     * ホストパスと認識できず、ゲストパスとして誤翻訳して ENOENT になる。
+     * 具体的には初回セットアップの dpkg が perl-base のハードリンク展開
+     * (link → fchownat)で「error setting ownership ... No such file or
+     * directory」で必ず失敗する(Pixel 10a / Android 17 実機で確認)。
+     *
+     * 対策: PRoot に渡すすべてのホストパスを canonicalPath(= PRoot 内部の
+     * realpath と同じ答え)に揃え、プレフィックスの不一致を構造的に防ぐ。
+     */
+    private fun File.canonical(): String =
+        runCatching { canonicalPath }.getOrDefault(absolutePath)
+
     private fun nativeDir(context: Context) = File(context.applicationInfo.nativeLibraryDir)
     private fun prootBinary(context: Context) = File(nativeDir(context), "libproot.so")
     private fun prootLoader(context: Context) = File(nativeDir(context), "libproot-loader.so")
@@ -317,17 +337,18 @@ object EmbeddedRuntimeManager {
         File(rootfs, ".l2s").mkdirs()
         File(rootfs, "phone").mkdirs()
         return listOf(
-            prootBinary(context).absolutePath,
+            prootBinary(context).canonical(),
             "--kill-on-exit",
             "--link2symlink",
             "-L",
             "--change-id=0:0",
-            "--rootfs=${rootfs.absolutePath}",
+            // canonicalPath 必須: PROOT_L2S_DIR と同じ綴りでなければならない(上記 canonical() 参照)
+            "--rootfs=${rootfs.canonical()}",
             "--cwd=/workspace",
             "--bind=/dev",
             "--bind=/proc",
             "--bind=/sys",
-            "--bind=${workspaceDir(context).absolutePath}:/workspace"
+            "--bind=${workspaceDir(context).canonical()}:/workspace"
         )
     }
 
@@ -507,19 +528,22 @@ object EmbeddedRuntimeManager {
         rootfs: File?,
         verbose: Boolean
     ): MutableMap<String, String> = linkedMapOf<String, String>().apply {
-        put("HOME", context.filesDir.absolutePath)
-        put("TMPDIR", tempDir(context).absolutePath)
-        put("PROOT_TMP_DIR", tempDir(context).absolutePath)
-        put("PROOT_LOADER", prootLoader(context).absolutePath)
+        put("HOME", context.filesDir.canonical())
+        put("TMPDIR", tempDir(context).canonical())
+        put("PROOT_TMP_DIR", tempDir(context).canonical())
+        put("PROOT_LOADER", prootLoader(context).canonical())
         put("PROOT_NO_SECCOMP", "1")
-        put("LD_LIBRARY_PATH", nativeDir(context).absolutePath)
+        put("LD_LIBRARY_PATH", nativeDir(context).canonical())
         put("PATH", "/system/bin:/system/xbin")
         put("ANDROID_DATA", "/data")
         put("ANDROID_ROOT", "/system")
         put("TERM", "xterm-256color")
         if (rootfs != null) {
             val l2s = File(rootfs, ".l2s").apply { mkdirs() }
-            put("PROOT_L2S_DIR", l2s.absolutePath)
+            // canonicalPath 必須: PRoot は --rootfs を realpath で正規化する一方、
+            // PROOT_L2S_DIR は文字列をそのまま使うため、綴りを揃えないと
+            // link2symlink の疑似ハードリンクが解決不能になる(canonical() の説明参照)。
+            put("PROOT_L2S_DIR", l2s.canonical())
         }
         if (verbose) put("PROOT_VERBOSE", "9")
     }
