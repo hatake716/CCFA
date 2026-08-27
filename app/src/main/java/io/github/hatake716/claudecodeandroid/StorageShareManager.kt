@@ -1,36 +1,82 @@
 package io.github.hatake716.claudecodeandroid
 
 import android.content.Context
-import android.os.Environment
+import android.net.Uri
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-/** Persists and validates Android-folder <-> Linux bind mount settings. */
+/**
+ * Persists Android-folder <-> Linux share settings for the Google Play build.
+ *
+ * sideload 版は「Android の任意パスを PRoot へ常時 bind mount」していたが、
+ * targetSdk 30+ の scoped storage では /storage/emulated/0/... への直接
+ * ファイルアクセス（PRoot がネイティブに open する経路）がカーネルレベルで
+ * 拒否されるため、その方式は成立しない。
+ *
+ * Play 版では方式を変える:
+ *   - ユーザーが SAF (ACTION_OPEN_DOCUMENT_TREE) で共有フォルダを選ぶ
+ *   - そのツリー URI を恒久保持（takePersistableUriPermission）
+ *   - PRoot がアクセスするのはアプリ専用領域 filesDir 内の
+ *     /workspace/phone/<name> だけ（[SafSyncManager] がミラー同期する）
+ *
+ * したがって [Mapping.treeUri] が SAF ツリー、[Mapping.guestPath] は必ず
+ * filesDir 内の /workspace/phone/ 以下を指す。ホストの生パスは保持しない。
+ */
 object StorageShareManager {
     private const val PREFS = "storage-shares"
-    private const val KEY_MAPPINGS = "mappings-json"
+    private const val KEY_MAPPINGS = "mappings-json-saf-v2"
     private const val MAX_MAPPINGS = 8
 
+    /** ワークスペース内で SAF 共有フォルダを束ねるサブディレクトリ名。 */
+    const val PHONE_SUBDIR = "phone"
+
+    enum class SyncDirection {
+        /** Android(SAF) ↔ Linux を双方向ミラー（既定・新しい方優先）。 */
+        BIDIRECTIONAL,
+
+        /** Android(SAF) → Linux のみ（取込）。 */
+        IMPORT_ONLY,
+
+        /** Linux → Android(SAF) のみ（書出）。 */
+        EXPORT_ONLY;
+
+        companion object {
+            fun from(value: String?): SyncDirection =
+                entries.firstOrNull { it.name == value } ?: BIDIRECTIONAL
+        }
+    }
+
+    /**
+     * 1件の共有設定。
+     *
+     * @param label      表示名（/workspace/phone/<sanitize(label)> のフォルダ名にも使う）
+     * @param enabled    有効フラグ
+     * @param treeUri    SAF の永続化ツリー URI（未選択なら null）
+     * @param treeLabel  選択フォルダの人間可読名（DocumentsUI が返す表示名）
+     * @param direction  同期方向
+     */
     data class Mapping(
         val label: String,
         val enabled: Boolean,
-        val hostPath: String,
-        val guestPath: String
-    )
+        val treeUri: Uri?,
+        val treeLabel: String,
+        val direction: SyncDirection
+    ) {
+        /** filesDir 内の workspace 相対パス（例: phone/Documents）。 */
+        fun workspaceRelativePath(): String = "$PHONE_SUBDIR/${sanitizeFolderName(label)}"
+
+        /** Linux から見えるパス（/workspace は EmbeddedRuntimeManager が bind 済み）。 */
+        fun guestPath(): String = "/workspace/${workspaceRelativePath()}"
+    }
 
     fun defaultMappings(): List<Mapping> = listOf(
         Mapping(
-            label = "Download",
-            enabled = true,
-            hostPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath,
-            guestPath = "/phone/Downloads"
-        ),
-        Mapping(
             label = "Documents",
             enabled = true,
-            hostPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS).absolutePath,
-            guestPath = "/phone/Documents"
+            treeUri = null,
+            treeLabel = "未選択",
+            direction = SyncDirection.BIDIRECTIONAL
         )
     )
 
@@ -43,12 +89,14 @@ object StorageShareManager {
             buildList {
                 for (i in 0 until array.length()) {
                     val item = array.getJSONObject(i)
+                    val uriString = item.optString("treeUri", "")
                     add(
                         Mapping(
                             label = item.optString("label", "共有フォルダ"),
                             enabled = item.optBoolean("enabled", true),
-                            hostPath = item.getString("hostPath"),
-                            guestPath = item.getString("guestPath")
+                            treeUri = uriString.takeIf { it.isNotBlank() }?.let(Uri::parse),
+                            treeLabel = item.optString("treeLabel", "未選択"),
+                            direction = SyncDirection.from(item.optString("direction"))
                         )
                     )
                 }
@@ -64,8 +112,9 @@ object StorageShareManager {
                 JSONObject().apply {
                     put("label", mapping.label.trim())
                     put("enabled", mapping.enabled)
-                    put("hostPath", normalizeHostPath(mapping.hostPath))
-                    put("guestPath", normalizeGuestPath(mapping.guestPath))
+                    put("treeUri", mapping.treeUri?.toString().orEmpty())
+                    put("treeLabel", mapping.treeLabel)
+                    put("direction", mapping.direction.name)
                 }
             )
         }
@@ -84,62 +133,57 @@ object StorageShareManager {
 
     fun validate(mappings: List<Mapping>): Result<Unit> = runCatching {
         require(mappings.size <= MAX_MAPPINGS) { "共有設定は最大${MAX_MAPPINGS}件です。" }
-        val enabledTargets = mutableSetOf<String>()
-        mappings.forEachIndexed { index, raw ->
-            val label = raw.label.trim()
-            val host = normalizeHostPath(raw.hostPath)
-            val guest = normalizeGuestPath(raw.guestPath)
+        val usedFolders = mutableSetOf<String>()
+        mappings.forEachIndexed { index, mapping ->
+            val label = mapping.label.trim()
             require(label.isNotBlank()) { "${index + 1}件目の表示名を入力してください。" }
-            require(host.startsWith('/')) { "$label: Android側パスは / から始めてください。" }
-            require(guest.startsWith("/phone/")) {
-                "$label: Linux側マウント先は /phone/ 以下にしてください。"
+            val folder = sanitizeFolderName(label)
+            require(folder.isNotBlank()) {
+                "$label: 表示名には英数字を含めてください（Linux側フォルダ名に使用します）。"
             }
-            require(!host.contains('\n') && !guest.contains('\n')) { "$label: パスに改行は使用できません。" }
-            require(!host.contains(':') && !guest.contains(':')) { "$label: パスに : は使用できません。" }
-            require(!guest.split('/').contains("..")) { "$label: Linux側パスに .. は使用できません。" }
-            if (raw.enabled) {
-                require(enabledTargets.add(guest)) { "Linux側マウント先 $guest が重複しています。" }
+            if (mapping.enabled) {
+                require(mapping.treeUri != null) {
+                    "$label: 「フォルダを選択」で Android 側の共有フォルダを指定してください。"
+                }
+                require(usedFolders.add(folder)) {
+                    "Linux側フォルダ名 phone/$folder が重複しています。表示名を変えてください。"
+                }
             }
         }
     }
 
     fun enabledMappings(context: Context): List<Mapping> =
-        load(context).filter { it.enabled }
+        load(context).filter { it.enabled && it.treeUri != null }
 
-    fun canReadWrite(mapping: Mapping): Boolean = canReadWrite(File(mapping.hostPath))
-
-    fun canReadWrite(dir: File): Boolean = runCatching {
-        if (!dir.exists()) dir.mkdirs()
-        if (!dir.isDirectory) return@runCatching false
-        val probe = File(dir, ".ccfa-storage-probe-${android.os.Process.myPid()}")
-        probe.writeText("ok")
-        val ok = probe.readText() == "ok"
-        probe.delete()
-        ok
-    }.getOrDefault(false)
-
-    fun allEnabledMappingsAccessible(context: Context): Boolean {
-        val enabled = enabledMappings(context)
-        return enabled.isEmpty() || enabled.all(::canReadWrite)
-    }
-
-    fun prepareGuestDirectories(rootfs: File, mappings: List<Mapping>) {
-        mappings.forEach { mapping ->
-            val relative = normalizeGuestPath(mapping.guestPath).removePrefix("/")
-            File(rootfs, relative).mkdirs()
+    /**
+     * PRoot 起動前に、有効な共有フォルダの Linux 側ディレクトリ（filesDir 内）を用意する。
+     * 実データの同期は [SafSyncManager] がユーザー操作で行う。
+     */
+    fun prepareGuestDirectories(context: Context, rootfsUnused: File?) {
+        val workspace = EmbeddedRuntimeManager.workspaceDir(context)
+        enabledMappings(context).forEach { mapping ->
+            File(workspace, mapping.workspaceRelativePath()).mkdirs()
         }
     }
 
     fun newCustomMapping(index: Int): Mapping = Mapping(
-        label = "共有フォルダ $index",
+        label = "Shared$index",
         enabled = true,
-        hostPath = "/storage/emulated/0/",
-        guestPath = "/phone/Shared$index"
+        treeUri = null,
+        treeLabel = "未選択",
+        direction = SyncDirection.BIDIRECTIONAL
     )
 
-    private fun normalizeHostPath(value: String): String =
-        value.trim().let { if (it.length > 1) it.trimEnd('/') else it }
-
-    private fun normalizeGuestPath(value: String): String =
-        value.trim().let { if (it.length > 1) it.trimEnd('/') else it }
+    /**
+     * 表示名を Linux フォルダ名・ファイルシステム安全な形へ正規化する。
+     * 英数字・. _ - のみ残し、その他は _ に置換。先頭末尾の _ を削る。
+     */
+    fun sanitizeFolderName(label: String): String {
+        val cleaned = buildString {
+            label.trim().forEach { ch ->
+                append(if (ch.isLetterOrDigit() || ch == '.' || ch == '_' || ch == '-') ch else '_')
+            }
+        }
+        return cleaned.trim('_', '.').ifBlank { "shared" }
+    }
 }

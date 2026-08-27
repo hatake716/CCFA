@@ -1,6 +1,45 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
 }
+
+// -----------------------------------------------------------------------------
+// Google Play release signing (google-play branch)
+//
+// アップロード鍵は「keystore.properties」ファイル、または環境変数から読み込む。
+// どちらも存在しない場合は release 署名構成を作らず、ビルドは従来どおり
+// assembleDebug（debug 署名）でローカル検証できる状態を保つ。
+//
+// keystore.properties（リポジトリにはコミットしない。keystore.properties.example を参照）:
+//   storeFile=/absolute/path/to/ccfa-upload.jks
+//   storePassword=...
+//   keyAlias=ccfa-upload
+//   keyPassword=...
+//
+// CI では代わりに環境変数を使う:
+//   CCFA_UPLOAD_STORE_FILE / CCFA_UPLOAD_STORE_PASSWORD /
+//   CCFA_UPLOAD_KEY_ALIAS / CCFA_UPLOAD_KEY_PASSWORD
+// -----------------------------------------------------------------------------
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.inputStream().use { load(it) }
+    }
+}
+
+fun signingValue(propKey: String, envKey: String): String? =
+    (keystoreProps.getProperty(propKey) ?: System.getenv(envKey))?.takeIf { it.isNotBlank() }
+
+val uploadStoreFilePath = signingValue("storeFile", "CCFA_UPLOAD_STORE_FILE")
+val uploadStorePassword = signingValue("storePassword", "CCFA_UPLOAD_STORE_PASSWORD")
+val uploadKeyAlias = signingValue("keyAlias", "CCFA_UPLOAD_KEY_ALIAS")
+val uploadKeyPassword = signingValue("keyPassword", "CCFA_UPLOAD_KEY_PASSWORD")
+val hasReleaseSigning =
+    uploadStoreFilePath != null &&
+        uploadStorePassword != null &&
+        uploadKeyAlias != null &&
+        uploadKeyPassword != null
 
 val runtimeDir = layout.projectDirectory.dir("src/main/jniLibs/arm64-v8a")
 val embeddedProotLibrary = runtimeDir.file("libproot.so")
@@ -72,9 +111,20 @@ android {
     defaultConfig {
         applicationId = "io.github.hatake716.claudecodeandroid"
         minSdk = 26
-        targetSdk = 28
+        // Google Play は新規アプリ/更新に最新ターゲット API を要求する（2026-08-31 以降は
+        // Android 16 / API 36 以上）。sideload 版が使っていた targetSdk 28 は提出できない。
+        //
+        // 注意: targetSdk を 30+ に上げるとスコープドストレージが強制され、
+        // requestLegacyExternalStorage と旧来の WRITE_EXTERNAL_STORAGE は無効化される。
+        // 共有ストレージは SAF ベースへ移行する必要がある（docs/PLAY-RELEASE.md の TODO 参照）。
+        targetSdk = 36
         versionCode = 19
         versionName = "1.0.0"
+
+        // arm64-v8a 専用ランタイム。AAB の ABI 分割で余計な split を作らないよう明示。
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     compileOptions {
@@ -82,8 +132,58 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(uploadStoreFilePath!!)
+                storePassword = uploadStorePassword
+                keyAlias = uploadKeyAlias
+                keyPassword = uploadKeyPassword
+                // v1/v2/v3 署名スキームを有効化（Play App Signing のアップロード鍵用）。
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // Play 版は必ず debuggable=false（debug ビルドは Play が受理しない）。
+            // release の既定は false だが、意図を明示する。
+            isDebuggable = false
+            isMinifyEnabled = false
+            // minify=false のとき isShrinkResources=true は AGP がビルドを失敗させるため false 必須。
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            // 署名情報がある時だけ release 署名を割り当てる。無い場合は署名なしの
+            // bundleRelease/assembleRelease となり、ローカルで構成確認だけできる。
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+
+    // AAB 設定: この APK は arm64-v8a 専用・言語リソースも最小のため、
+    // 不要な split を抑制して 1 デバイス 1 構成で配信されるようにする。
+    bundle {
+        language {
+            enableSplit = false
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
+    }
+
     packaging {
         jniLibs {
+            // PRoot ランタイムはネイティブ ELF を「実行」するため、APK 内に圧縮せず
+            // 展開された状態で置く必要がある（extractNativeLibs=true と対応）。
             useLegacyPackaging = true
             keepDebugSymbols += "**/libproot.so"
             keepDebugSymbols += "**/libproot-loader.so"
@@ -96,4 +196,6 @@ android {
 dependencies {
     implementation("com.termux.termux-app:terminal-view:0.118.0")
     implementation("org.apache.commons:commons-compress:1.27.1")
+    // SAF ツリーの再帰走査に DocumentFile を使う（scoped storage 準拠の共有同期）。
+    implementation("androidx.documentfile:documentfile:1.0.1")
 }

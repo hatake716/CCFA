@@ -281,13 +281,11 @@ object EmbeddedRuntimeManager {
         }
 
         val args = baseProotArgs(context, rootfs).toMutableList()
-        val shares = StorageShareManager.enabledMappings(context)
-        StorageShareManager.prepareGuestDirectories(rootfs, shares)
-        shares.forEach { mapping ->
-            if (StorageShareManager.canReadWrite(mapping)) {
-                args += "--bind=${mapping.hostPath}:${mapping.guestPath}"
-            }
-        }
+        // Play 版: Android 側フォルダは /storage/... へ直接 bind できない（scoped storage）。
+        // 共有フォルダは filesDir 内の /workspace/phone/<name> に置き、SafSyncManager が
+        // SAF 経由でミラー同期する。ここでは Linux 側ディレクトリを用意するだけでよい
+        // （/workspace は下の baseProotArgs で bind 済みなので追加 bind は不要）。
+        StorageShareManager.prepareGuestDirectories(context, rootfs)
         args += listOf(
             "/usr/bin/env", "-i",
             "HOME=/root",
@@ -333,8 +331,13 @@ object EmbeddedRuntimeManager {
         )
     }
 
-    fun hasSharedStorageAccess(context: Context): Boolean =
-        StorageShareManager.allEnabledMappingsAccessible(context)
+    /** 有効な共有フォルダすべてに SAF アクセス許可が残っているか。 */
+    fun hasSharedStorageAccess(context: Context): Boolean {
+        val enabled = StorageShareManager.enabledMappings(context)
+        return enabled.isEmpty() || enabled.all { mapping ->
+            mapping.treeUri?.let { SafSyncManager.hasAccess(context, it) } ?: false
+        }
+    }
 
     fun isValidContainerName(name: String): Boolean =
         name.matches(Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,63}"))
@@ -346,7 +349,8 @@ object EmbeddedRuntimeManager {
         File(rootfs, "root").mkdirs()
         File(rootfs, "workspace").mkdirs()
         File(rootfs, "phone").mkdirs()
-        StorageShareManager.prepareGuestDirectories(rootfs, StorageShareManager.defaultMappings())
+        // 共有フォルダ（/workspace/phone/<name>）は起動時に prepareGuestDirectories が
+        // filesDir 内へ用意するため、rootfs 作成時にはここでは作らない。
         File(rootfs, ".l2s").mkdirs()
         File(rootfs, "tmp").apply {
             mkdirs()

@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+      Google Play 版（google-play ブランチ）の権限セット。
+
+      sideload 版が使っていた MANAGE_EXTERNAL_STORAGE（全ファイルアクセス）は
+      Play の制限付き権限で、汎用ターミナル用途では審査に通らないため撤去した。
+      READ/WRITE_EXTERNAL_STORAGE と requestLegacyExternalStorage も targetSdk 36 では
+      無効（scoped storage 強制）なので削除している。
+
+      Linux コンテナの rootfs・PRoot・HOME・/workspace はすべてアプリ専用領域
+      (Context.filesDir) に置くため、ストレージ権限は不要。
+      Android 側フォルダとの共有は SAF(ACTION_OPEN_DOCUMENT_TREE) で
+      ユーザーが選んだツリーのみに限定する（実装は TODO / docs/PLAY-RELEASE.md 参照）。
+    -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="false"
         android:extractNativeLibs="true"
-        android:requestLegacyExternalStorage="true"
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
