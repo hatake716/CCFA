@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CCFA プライバシーポリシー</title>
+<meta name="description" content="CCFA (日本語入力対応Linuxコンテナ) のプライバシーポリシー / Privacy Policy">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* CCFA サイト (index.html) と同じデザイントークン */
+:root{
+  --ground:#F4F1EA; --surface:#FBF9F5; --surface-2:#ECE7DE;
+  --ink:#2D2A26; --ink-soft:#4B463F; --muted:#6E675E; --border:#DDD6CB;
+  --accent:#C96442; --accent-ink:#AB4D30; --prompt:#3E7B41;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#14120F; --surface:#1E1B17; --surface-2:#26221D;
+    --ink:#F4EFE6; --ink-soft:#D9D2C6; --muted:#A79E92; --border:#332E28;
+    --accent:#E08A63; --accent-ink:#E9A487; --prompt:#9FD9A0;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#14120F; --surface:#1E1B17; --surface-2:#26221D;
+  --ink:#F4EFE6; --ink-soft:#D9D2C6; --muted:#A79E92; --border:#332E28;
+  --accent:#E08A63; --accent-ink:#E9A487; --prompt:#9FD9A0;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"Zen Kaku Gothic New",-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  line-height:1.85; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace}
+.wrap{width:min(860px,92vw);margin-inline:auto}
+header.site{border-bottom:1px solid var(--border);padding:18px 0}
+header.site .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:18px;color:var(--ink);text-decoration:none}
+.brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block}
+header.site a.back{color:var(--accent-ink);text-decoration:none;font-weight:500;font-size:14px}
+header.site a.back:hover{text-decoration:underline}
+main{padding:46px 0 30px}
+h1{font-size:clamp(26px,4.5vw,34px);font-weight:900;line-height:1.35;margin-bottom:10px}
+.meta{color:var(--muted);font-size:13.5px;margin-bottom:34px}
+.meta code{font-size:12.5px}
+article h2{font-size:20px;font-weight:700;margin:38px 0 10px;padding-top:26px;border-top:1px solid var(--border)}
+article h3{font-size:16px;font-weight:700;margin:22px 0 8px}
+article p{margin:0 0 14px;color:var(--ink-soft)}
+article ul{margin:0 0 14px 1.4em;color:var(--ink-soft)}
+article li{margin-bottom:6px}
+article strong{color:var(--ink)}
+article code{background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:.86em;font-family:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+article a{color:var(--accent-ink);font-weight:500}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin:0 0 14px}
+.card p:last-child,.card ul:last-child{margin-bottom:0}
+.lang-note{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--muted);margin:44px 0 8px}
+footer{border-top:1px solid var(--border);padding:30px 0 46px;color:var(--muted);font-size:13px;margin-top:40px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between}
+footer a{color:var(--accent-ink);text-decoration:none;font-weight:500}
+footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap">
+    <a class="brand" href="./index.html"><span class="dot"></span>CCFA</a>
+    <a class="back" href="./index.html">← アプリ紹介ページへ戻る</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <h1>CCFA プライバシーポリシー</h1>
+  <p class="meta">
+    発効日: 2026年8月27日 ・ 対象アプリ: CCFA（日本語入力対応Linuxコンテナ、パッケージ名 <code class="mono">io.github.hatake716.claudecodeandroid</code>）<br>
+    本ページの固定URL: <code class="mono">https://hatake716.github.io/CCFA/privacy.html</code>
+  </p>
+
+  <article>
+    <div class="card">
+      <p><strong>要点:</strong> CCFAは、解析（アナリティクス）・広告・テレメトリー・アカウント・クラウド同期のサーバーを一切運用していません。CCFAが個人データを収集・送信・販売・第三者提供することはありません。</p>
+    </div>
+
+    <h2>アプリがローカルで扱うデータ</h2>
+    <ul>
+      <li>アプリ専用領域（<code>Context.filesDir</code>）内のLinuxコンテナのファイルと <code>/workspace</code>。</li>
+      <li>アプリ内ターミナル（PTY）の動作に必要なローカルの入出力。</li>
+      <li><strong>ストレージ共有設定</strong>でユーザーがシステムのフォルダ選択画面（Storage Access Framework, <code>ACTION_OPEN_DOCUMENT_TREE</code>）から明示的に選択したAndroid側フォルダ。ユーザーがフォルダを選択するまで、いかなるAndroid側フォルダも共有されません。付与したフォルダ権限は、設定の無効化・削除によりいつでも取り消せます。</li>
+    </ul>
+    <p>選択したフォルダがLinuxコンテナへ直接マウントされることはありません。ユーザーが同期を実行したときにのみ、選択フォルダとアプリ専用領域内の <code>/workspace/phone/&lt;名前&gt;</code> との間で内容がミラーコピーされます（設定に応じて双方向・取込のみ・書出のみ）。共有設定が有効な間、コンテナ内のプログラムは <code>/workspace</code> にコピー済みの内容を読み取れます。</p>
+    <p>CCFAが無関係なAndroidストレージを走査することはありません。Google Play版が要求する権限は <code>INTERNET</code> のみで、広範なストレージ権限は保持しません。</p>
+
+    <h2>CCFAが行うネットワークアクセス</h2>
+    <p>CCFAのネットワークアクセスは、ユーザーの操作で開始されるLinux環境構築のためだけに使われます。具体的には、Linux Baseイメージを提供元（Canonicalの <code class="mono">cdimage.ubuntu.com</code>）からダウンロードすること、およびユーザーが指示した通常のLinuxパッケージのインストール（例: <code>apt</code>。設定されたパッケージミラーと直接通信します）です。</p>
+    <p>CCFAが、プロプライエタリなサードパーティ製AI CLIを自動的にダウンロード・インストール・修復・ログイン・認証することは<strong>ありません</strong>。サードパーティ提供者のOAuthトークン・APIキー・サブスクリプション資格情報・アカウント権限・レート制限を取得したり中継したりすることもありません。</p>
+
+    <h2>ユーザーがインストールするサードパーティソフトウェア</h2>
+    <p>ユーザーがCCFAのLinux環境内にサードパーティ製AI CLIその他のネットワークを利用するプログラムを手動でインストールした場合、そのソフトウェアは自身の提供元や他のサービスと直接通信することがあります。</p>
+    <p>その通信は、当該サードパーティの利用規約・プライバシーポリシー・アカウント設定・データ保持の選択・提供地域ポリシーその他の適用条件に従います。CCFAがこのサードパーティ通信を処理することはありません。</p>
+
+    <h2>ローカルの認証情報</h2>
+    <p>ユーザーがコンテナ内に手動でインストールしたソフトウェアが作成・保存する認証情報は、そのソフトウェア自身が送信・書き出しをしない限り、アプリ専用のLinuxファイルシステム内に留まります。CCFAがそれらの認証情報を意図的に閲覧・アップロード・販売・仲介することはありません。</p>
+
+    <h2>データの削除</h2>
+    <ul>
+      <li>Linuxコンテナを削除すると、そのコンテナのrootfsが削除されます。</li>
+      <li><code>/workspace</code>（<code>/workspace/phone/</code> のミラーコピーを含む）はアプリ専用領域にあり、アプリのアンインストールで削除されます。</li>
+      <li>共有用に選択したAndroid側フォルダのファイルはアプリの外にあり、ユーザーの管理下に残ります。CCFAがそれらを変更するのは、書き込み方向を含む同期をユーザーが実行したときだけです。</li>
+    </ul>
+
+    <h2>子どもについて</h2>
+    <p>CCFAは、子どもを含むいかなる利用者からも個人データを収集しません。</p>
+
+    <h2>配布チャネルによる違い</h2>
+    <p>本ポリシーはGoogle Play版の動作を説明しています。別途配布されるサイドロード版（GitHub Releases）は1点だけ異なり、Androidの全ファイルアクセス権限を使用して、ユーザーが設定したAndroidフォルダをSAFミラー同期ではなくLinuxコンテナへ直接バインドマウントします。追加のデータ収集はありません。</p>
+
+    <h2>変更と連絡先</h2>
+    <p>本ポリシーの変更は、発効日を更新のうえ上記の固定URLで公開します。</p>
+    <ul>
+      <li>開発者: hatake716（個人開発者）</li>
+      <li>連絡先: <a href="https://github.com/hatake716/CCFA/issues" target="_blank" rel="noopener">GitHub Issues</a>（またはGoogle Playストア掲載情報に表示される開発者連絡先）</li>
+    </ul>
+
+    <div class="lang-note">The English original follows. 以下は英語原文です。日本語版と英語版に相違がある場合、Google Play配布物については日本語版を優先します。</div>
+
+    <h2>CCFA privacy disclosure (English)</h2>
+    <p class="meta" style="margin-bottom:18px">Effective date: 2026-08-27 · Application: CCFA (package <code class="mono">io.github.hatake716.claudecodeandroid</code>)</p>
+
+    <p>CCFA itself does not operate an analytics, telemetry, advertising, account, or cloud-sync server. CCFA does not collect, transmit, sell, or share personal data with the developer or any third party.</p>
+
+    <h3>Data CCFA accesses locally</h3>
+    <ul>
+      <li>App-private Linux container files and <code>/workspace</code> (both inside the app-private storage area, <code>Context.filesDir</code>).</li>
+      <li>Local terminal input/output needed to operate the in-app PTY.</li>
+      <li>Android folders that the user explicitly selects with the system folder picker (Storage Access Framework, <code>ACTION_OPEN_DOCUMENT_TREE</code>). No Android folder is shared until the user selects one; the persisted folder permission can be revoked by the user at any time by disabling or removing the mapping.</li>
+    </ul>
+    <p>Selected folders are not mounted into the Linux container. Instead, when the user runs a sync, their contents are mirror-copied between the selected Android folder and <code>/workspace/phone/&lt;name&gt;</code> inside the app-private area (bidirectional, import-only, or export-only, as configured). Programs inside the Linux container can read whatever has been copied into <code>/workspace</code> while the mapping is enabled.</p>
+    <p>CCFA does not scan unrelated Android storage. It holds no broad storage permission: the Google Play build requests only <code>INTERNET</code>.</p>
+
+    <h3>Network access performed by CCFA</h3>
+    <p>CCFA uses network access only for Linux-environment setup started by the user: downloading the Linux Base image from its upstream provider (Canonical's <code class="mono">cdimage.ubuntu.com</code>) and installing ordinary Linux packages the user requests (for example via <code>apt</code>, which contacts the configured package mirrors directly).</p>
+    <p>CCFA does <strong>not</strong> automatically download, install, repair, log in to, or authenticate a proprietary third-party AI CLI. It does not obtain or proxy a third-party provider's OAuth token, API key, subscription credential, account entitlement, or rate limit.</p>
+
+    <h3>Third-party software installed by the user</h3>
+    <p>If the user manually installs a third-party AI CLI or other networked program inside the CCFA Linux environment, that software may communicate directly with its own provider or other services. Such traffic is governed by that third party's terms, privacy policy, account settings, data-retention choices, supported-region policy, and other applicable conditions. CCFA does not claim that this third-party traffic is processed by CCFA.</p>
+
+    <h3>Local credentials</h3>
+    <p>Credentials created or stored by software that the user manually installs inside the Linux container remain inside the app-private Linux filesystem unless that software itself transmits, exports, or writes them elsewhere. CCFA does not intentionally inspect, upload, sell, or broker those credentials.</p>
+
+    <h3>Data deletion</h3>
+    <ul>
+      <li>Removing a Linux container deletes that container rootfs.</li>
+      <li><code>/workspace</code> (including <code>/workspace/phone/</code> mirror copies) is app-private and is deleted when the app is uninstalled.</li>
+      <li>Files in the Android folders the user selected for sharing live outside the app and remain under the user's control; CCFA only changes them when the user runs a sync whose direction writes to them.</li>
+    </ul>
+
+    <h3>Children</h3>
+    <p>CCFA does not collect personal data from any user, including children.</p>
+
+    <h3>Distribution channels</h3>
+    <p>This policy describes the Google Play build. The separately distributed sideload build (GitHub Releases) differs in one respect: it uses Android's all-files-access permission and binds user-configured Android folders directly into the Linux container instead of SAF mirror sync. It performs no additional data collection.</p>
+
+    <h3>Changes and contact</h3>
+    <ul>
+      <li>Developer: hatake716 (individual developer)</li>
+      <li>Contact: <a href="https://github.com/hatake716/CCFA/issues" target="_blank" rel="noopener">https://github.com/hatake716/CCFA/issues</a> (or the developer contact address shown on the Google Play store listing)</li>
+    </ul>
+  </article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>CCFA — 日本語入力対応Linuxコンテナ ・ Apache License 2.0</div>
+    <div>
+      <a href="./index.html">アプリ紹介</a> &nbsp;·&nbsp;
+      <a href="https://github.com/hatake716/CCFA" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
