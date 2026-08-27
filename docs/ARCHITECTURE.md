@@ -84,7 +84,8 @@ Changes therefore apply from the next terminal launch.
 
 ## Android executable restriction
 
-The Linux userland lives in app-private writable storage. The project intentionally uses:
+The Linux userland lives in app-private writable storage. On the `main`
+(sideload) branch the project intentionally uses:
 
 ```text
 compileSdk 36
@@ -92,7 +93,17 @@ targetSdk  28
 minSdk     26
 ```
 
-This is a technical choice for the current direct/sideload distribution architecture and is not a Google Play configuration.
+This is a technical choice for the direct/sideload distribution architecture
+and is not a Google Play configuration.
+
+> **google-play branch**: for Google Play the target is raised to
+> `targetSdk 36` (Play requires a recent target API for new apps). Because
+> targetSdk 29+ enforces W^X on the app data directory, PRoot ships as
+> `libproot.so` in the exec-capable native library dir and rootfs binaries
+> run through PRoot's loader. Storage sharing moves from `MANAGE_EXTERNAL_STORAGE`
+> bind mounts to SAF mirror sync. See [`PLAY-RELEASE.md`](PLAY-RELEASE.md)
+> for the full Play build, its verification status, and the remaining
+> W^X / 16 KB page-size tasks.
 
 ## AI-agent policy
 

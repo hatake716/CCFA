@@ -1,17 +1,12 @@
 package io.github.hatake716.claudecodeandroid
 
-import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -19,12 +14,10 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
-import android.widget.Toast
 
 /** Main launcher for CCFA's fully embedded Linux + PTY architecture. */
 class MainActivity : Activity() {
     companion object {
-        private const val REQUEST_STORAGE = 720
         private const val BASE_DEV_SETUP =
             "apt-get -o Acquire::Retries=3 update && " +
                 "DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=3 install -y ca-certificates curl git ripgrep locales"
@@ -117,21 +110,18 @@ class MainActivity : Activity() {
     }
 
     private fun storageCard(): View {
-        val section = section("スマートフォンストレージ", "AndroidとLinuxの共有フォルダを編集可能")
-        section.addView(badge("初期値: Download  ↔  /phone/Downloads"), top(dp(12)))
-        section.addView(badge("初期値: Documents  ↔  /phone/Documents"), top(dp(6)))
-        section.addView(primary("共有設定を編集") {
-            startActivity(Intent(this, StorageSettingsActivity::class.java))
-        }, top(dp(10)))
-        section.addView(button("ストレージ権限を設定") { requestSharedStorageAccess() }, top(dp(8)))
+        val section = section("スマートフォンストレージ", "AndroidとLinuxの共有フォルダをSAFで同期")
+        section.addView(badge("SAFで選択  ↔  /workspace/phone/<名前>"), top(dp(12)))
+        section.addView(badge("双方向ミラー同期（任意のタイミングで実行）"), top(dp(6)))
+        section.addView(primary("共有フォルダを設定・同期") { openStorageSharing() }, top(dp(10)))
         section.addView(button("現在の共有先を確認") {
             val mappings = StorageShareManager.enabledMappings(this)
             val message = if (mappings.isEmpty()) {
                 "有効な共有設定はありません。"
             } else {
                 mappings.joinToString("\n") { mapping ->
-                    val ok = StorageShareManager.canReadWrite(mapping)
-                    "${if (ok) "✓" else "×"} ${mapping.label}: ${mapping.hostPath} → ${mapping.guestPath}"
+                    val ok = mapping.treeUri?.let { SafSyncManager.hasAccess(this, it) } ?: false
+                    "${if (ok) "✓" else "×"} ${mapping.label}: ${mapping.treeLabel} ↔ ${mapping.guestPath()}"
                 }
             }
             AlertDialog.Builder(this)
@@ -141,16 +131,15 @@ class MainActivity : Activity() {
                 .show()
         }, top(dp(8)))
         section.addView(help(
-            "共有設定は個別にON/OFFでき、Android側パスとLinux側 /phone/ 以下のマウント先を変更できます。" +
-                "変更は次回ターミナル起動から反映されます。"
+            "Android側フォルダはSAF（フォルダ選択）で指定し、Linux側 /workspace/phone/ 以下と" +
+                "双方向ミラー同期します。同期は設定画面の「今すぐ同期」で任意のタイミングに実行できます。"
         ))
         return section
     }
 
     private fun setupCard(): View {
         val section = section("初回セットアップ", "CCFAのLinuxコンテナ実行環境をこのAPK内に構築")
-        section.addView(button("1. ストレージ権限を設定") { requestSharedStorageAccess() }, top(dp(12)))
-        setupButton = primary("2. 初期Linux環境を作成") { createInitialRuntime() }
+        setupButton = primary("初期Linux環境を作成") { createInitialRuntime() }
         section.addView(setupButton, top(dp(8)))
 
         setupProgress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
@@ -261,23 +250,10 @@ class MainActivity : Activity() {
         startActivity(EmbeddedTerminalActivity.intent(this, active, mode))
     }
 
-    private fun requestSharedStorageAccess() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val manage = Intent(
-                Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                Uri.parse("package:$packageName")
-            )
-            if (runCatching { startActivity(manage) }.isSuccess) return
-        }
-        val needed = mutableListOf<String>()
-        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            needed += Manifest.permission.READ_EXTERNAL_STORAGE
-        }
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            needed += Manifest.permission.WRITE_EXTERNAL_STORAGE
-        }
-        if (needed.isNotEmpty()) requestPermissions(needed.toTypedArray(), REQUEST_STORAGE)
-        else Toast.makeText(this, "共有ストレージ権限は許可済みです", Toast.LENGTH_SHORT).show()
+    // Play 版は全ファイルアクセスを使わない。共有フォルダの選択・同期は
+    // scoped storage 準拠の SAF で行うため、その設定画面へ誘導する。
+    private fun openStorageSharing() {
+        startActivity(Intent(this, StorageSettingsActivity::class.java))
     }
 
     private fun showError(message: String) = AlertDialog.Builder(this)

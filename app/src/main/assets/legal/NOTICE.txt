@@ -2,11 +2,11 @@ CCFA (日本語入力対応Linuxコンテナ) — 法的情報 / Third-party not
 
 CCFAは独立した非公式プロジェクトです。Anthropic PBC、Canonical Ltd.、Termux、Samba Team、Apache Software Foundationその他の第三者から承認・提携・後援を受けた製品ではありません。
 
-CCFA v0.9.0は、特定ベンダーのAI CLIをAPKへ同梱せず、自動ダウンロード・自動インストール・自動修復・自動ログイン・認証代理も行いません。第三者AI CLIを利用する場合は、利用者自身がLinuxシェル内で各提供元の公式手順・利用規約・プライバシーポリシー・認証条件に従って導入・認証します。CCFAは第三者のOAuthトークン、APIキー、サブスクリプション資格、アカウント権限、レート制限を代理提供しません。
+CCFA v1.0.0は、特定ベンダーのAI CLIをAPKへ同梱せず、自動ダウンロード・自動インストール・自動修復・自動ログイン・認証代理も行いません。第三者AI CLIを利用する場合は、利用者自身がLinuxシェル内で各提供元の公式手順・利用規約・プライバシーポリシー・認証条件に従って導入・認証します。CCFAは第三者のOAuthトークン、APIキー、サブスクリプション資格、アカウント権限、レート制限を代理提供しません。
 
 CCFA本体はApache License 2.0で提供します。APKには以下のオープンソース部品が含まれ、各部品にはそれぞれのライセンスが適用されます。
 
-- Termux PRoot 5.1.107.91 — GPL-2.0系
+- Termux PRoot 5.1.107.92 — GPL-2.0系
 - libandroid-shmem 0.7 — BSD-3-Clause
 - libtalloc 2.4.3 shared library — LGPL-3.0系（Termuxパッケージメタデータ: GPL-3.0）
 - Termux terminal-view / terminal-emulator 0.118.0 — TermuxがApache-2.0例外として明示するterminal modules

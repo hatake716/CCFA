@@ -6,8 +6,15 @@ LEGAL="$ROOT/app/src/main/assets/legal"
 LICENSES="$LEGAL/licenses"
 SOURCES="$LEGAL/sources"
 RECIPES="$SOURCES/termux-build-recipes"
-TERMUX_PACKAGES_COMMIT="5dac893779dc6da03dac1d797aa4bd03a1cc0494"
+TERMUX_PACKAGES_COMMIT="08b49b3ce00b1e14a3a0365200f30e50f8dfafe1"
+# scripts/prepare-termux-android-proot.sh の PROOT_VERSION と必ず一致させること
+# （同梱バイナリと対応ソースの GPL 整合性）。
+PROOT_SOURCE_VERSION="5.1.107.92"
 mkdir -p "$LICENSES" "$SOURCES" "$RECIPES"
+
+# 過去バージョンの対応ソース zip が残っていると、ローカルの増分ビルドで
+# 新旧両方の zip が APK に同梱されてしまうため、対象版以外を削除する。
+find "$SOURCES" -maxdepth 1 -name 'proot-v*.zip' ! -name "proot-v${PROOT_SOURCE_VERSION}.zip" -delete
 
 fetch() {
   local url="$1" out="$2"
@@ -41,8 +48,8 @@ fetch "https://raw.githubusercontent.com/apache/commons-codec/rel/commons-codec-
 fetch "https://raw.githubusercontent.com/apache/commons-io/rel/commons-io-2.16.1/NOTICE.txt" "$LICENSES/COMMONS-IO-NOTICE.txt"
 fetch "https://raw.githubusercontent.com/apache/commons-lang/rel/commons-lang-3.16.0/NOTICE.txt" "$LICENSES/COMMONS-LANG3-NOTICE.txt"
 
-fetch "https://github.com/termux/proot/archive/v5.1.107.91.zip" "$SOURCES/proot-v5.1.107.91.zip"
-verify_sha256 "a7bc2fab34bf9a39073e8291f08a662e848c61a67494e59f5f84f5ca10690128" "$SOURCES/proot-v5.1.107.91.zip"
+fetch "https://github.com/termux/proot/archive/v${PROOT_SOURCE_VERSION}.zip" "$SOURCES/proot-v${PROOT_SOURCE_VERSION}.zip"
+verify_sha256 "29385d1ddb619a9c4449ab512bfd55032034b22f724ddf98fc95ff300ea32135" "$SOURCES/proot-v${PROOT_SOURCE_VERSION}.zip"
 
 fetch "https://github.com/termux/libandroid-shmem/archive/refs/tags/v0.7.tar.gz" "$SOURCES/libandroid-shmem-v0.7.tar.gz.source"
 verify_sha256 "1e5ff8459bc0a8c229dd8a94b27d119987e09ef3414331c2b5ebfff20b98e867" "$SOURCES/libandroid-shmem-v0.7.tar.gz.source"
@@ -50,11 +57,18 @@ verify_sha256 "1e5ff8459bc0a8c229dd8a94b27d119987e09ef3414331c2b5ebfff20b98e867"
 fetch "https://www.samba.org/ftp/talloc/talloc-2.4.3.tar.gz" "$SOURCES/talloc-2.4.3.tar.gz.source"
 verify_sha256 "dc46c40b9f46bb34dd97fe41f548b0e8b247b77a918576733c528e83abd854dd" "$SOURCES/talloc-2.4.3.tar.gz.source"
 
+# terminal-emulator v0.118.0 の JNI ソース。app/libs/terminal-emulator-0.118.0-16k.aar 内蔵の
+# libtermux.so (arm64-v8a) はこの termux.c を scripts/build-terminal-emulator-16k.sh が
+# 16KiB page alignment でコンパイルした再ビルド版である。
+fetch "https://raw.githubusercontent.com/termux/termux-app/v0.118.0/terminal-emulator/src/main/jni/termux.c" "$SOURCES/termux-terminal-emulator-v0.118.0-termux.c"
+verify_sha256 "729112f2e66cdddb7e7311ddf8a89ad54037a54bddbf4d5291f2e1fff5b97373" "$SOURCES/termux-terminal-emulator-v0.118.0-termux.c"
+
 BASE="https://raw.githubusercontent.com/termux/termux-packages/$TERMUX_PACKAGES_COMMIT/packages"
 fetch "$BASE/proot/build.sh" "$RECIPES/proot-build.sh"
 fetch "$BASE/libandroid-shmem/build.sh" "$RECIPES/libandroid-shmem-build.sh"
 fetch "$BASE/libtalloc/build.sh" "$RECIPES/libtalloc-build.sh"
 cp "$ROOT/scripts/prepare-termux-android-proot.sh" "$SOURCES/ccfa-prepare-termux-android-proot.sh"
+cp "$ROOT/scripts/build-terminal-emulator-16k.sh" "$SOURCES/ccfa-build-terminal-emulator-16k.sh"
 
 cat > "$SOURCES/README.txt" <<EOF
 CCFA corresponding-source bundle
@@ -63,6 +77,12 @@ This directory is intentionally embedded in distributed CCFA APKs so recipients 
 native GPL/LGPL components receive the corresponding upstream source archives alongside
 the object code. The CCFA packaging script used to select, verify and alter ELF metadata
 is included as ccfa-prepare-termux-android-proot.sh.
+
+The terminal-emulator JNI library (libtermux.so, arm64-v8a) shipped inside
+terminal-emulator-0.118.0-16k.aar is a rebuild of the included
+termux-terminal-emulator-v0.118.0-termux.c with 16KiB ELF page alignment (required by
+Google Play); the build script is included as ccfa-build-terminal-emulator-16k.sh and no
+other part of the upstream v0.118.0 terminal-emulator sources was modified.
 
 Android AAPT can ignore assets ending in .gz. For that reason these exact gzip archives
 are stored with a trailing .source suffix inside the APK:

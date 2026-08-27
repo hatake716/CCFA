@@ -23,7 +23,7 @@ Androidの日本語IMEでかな漢字変換した文字列を、そのままLinu
 
 <br><br>
 
-**[⬇ 最新版をダウンロード](https://github.com/hatake716/CCFA/releases/latest)** &nbsp;·&nbsp; [🐧 紹介ページ](https://hatake716.github.io/CCFA/)
+**▶ Google Play 版 — 近日公開**（内部テスト実施中） &nbsp;·&nbsp; [⬇ サイドロード版 APK](https://github.com/hatake716/CCFA/releases/latest) &nbsp;·&nbsp; [🐧 紹介ページ](https://hatake716.github.io/CCFA/) &nbsp;·&nbsp; [🔒 プライバシーポリシー](https://hatake716.github.io/CCFA/privacy.html)
 
 </div>
 
@@ -66,6 +66,18 @@ CCFA は、Android 1台で完結する Linux コンテナ環境です。
 - Android: **8.0 (API 26) 以降**
 - License: **Apache License 2.0**（同梱する第三者コンポーネントには各ライセンスが適用されます）
 
+### 配布形態
+
+| | Google Play 版（このリポジトリの既定） | サイドロード版（GitHub Releases） |
+|---|---|---|
+| パッケージ名 | `io.github.hatake716.ccfa` | `io.github.hatake716.claudecodeandroid` |
+| targetSdk | 36 | 28 |
+| ストレージ共有 | SAF（フォルダ選択）＋ミラー同期 | 全ファイルアクセス権限＋直接バインドマウント |
+| 権限 | `INTERNET` のみ | ストレージ権限を使用 |
+| 入手 | Google Play（近日公開・内部テスト中） | [Releases v1.0.0](https://github.com/hatake716/CCFA/releases) |
+
+2つは別アプリとして併存インストールできます。main ブランチは **Google Play 版** を既定として開発を継続します。
+
 ---
 
 ## できること
@@ -95,26 +107,22 @@ PGUP ←    ↓    →    PGDN BKSP ENTER
 
 ターミナル文字サイズは `A− / A+` またはピンチ操作で変更でき、設定は保存されます。
 
-### 📁 スマートフォンストレージとの共有
+### 📁 スマートフォンストレージとの共有（SAF ミラー同期）
 
-Android 側フォルダを Linux コンテナ内へマウントできます。初期設定は次のとおりです。
+Android のシステムフォルダ選択画面（Storage Access Framework）で選んだフォルダだけを、Linux 側 `/workspace/phone/<名前>` と**ミラー同期**します。常時マウントではなく、**「今すぐ同期」** を押したタイミングでコピーが行われます。
 
 ```text
-Android Download   → /phone/Downloads
-Android Documents  → /phone/Documents
+SAFで選択したAndroidフォルダ  ⇄  /workspace/phone/<名前>
+（双方向 / 取込のみ / 書出のみ を共有ごとに選択可能）
 ```
 
-アプリの **「スマートフォンストレージ」→「共有設定を編集」** から、以下を変更できます。
+アプリの **「共有フォルダを設定・同期」** から、以下を設定できます。
 
-- 共有ごとの ON / OFF
-- Android 側フォルダのパス
-- Linux 側 `/phone/` 以下のマウント先
-- 表示名 / 共有設定の追加・削除
-- 読み書き確認 / 初期設定への復元
+- Android 側フォルダの選択（SAF ピッカー）
+- 同期方向（双方向・取込のみ・書出のみ）
+- 共有ごとの ON / OFF、表示名、追加・削除（最大8件）
 
-最大8件まで登録できます。変更内容は次回ターミナル起動時から反映されます。
-
-> 共有ストレージは Android とのファイル交換用途に適しています。実行ファイルや Linux 開発環境本体は `/workspace` の利用を推奨します。
+> Google Play 版は**全ファイルアクセス権限を使用しません**。アプリが要求する権限は `INTERNET` のみで、ユーザーが選択したフォルダ以外の Android ストレージへはアクセスできません。実行ファイルや Linux 開発環境本体は `/workspace` の利用を推奨します。
 
 ### 📦 複数Linuxコンテナ
 
@@ -149,25 +157,25 @@ Linux 環境を複数作成して使い分けられます。開発用・検証�
 
 ## インストール
 
-### 1. APKをダウンロード
+### 方法1 — Google Play（推奨・近日公開）
 
-GitHub の **[Releases](https://github.com/hatake716/CCFA/releases)** から最新の CCFA APK をダウンロードします。
+Google Play 版（パッケージ名 `io.github.hatake716.ccfa`）は現在**内部テスト実施中**で、近日公開予定です。公開後はストアからインストールしてください。
 
-- 最新版: **v1.0.0** — [`CCFA-v1.0.0-debug.apk`](https://github.com/hatake716/CCFA/releases/latest)
+<!-- 公開後にリンクを有効化: https://play.google.com/store/apps/details?id=io.github.hatake716.ccfa -->
+
+### 方法2 — サイドロード版 APK（GitHub Releases）
+
+旧ストレージ方式（全ファイルアクセス＋バインドマウント）の **v1.0.0** を配布しています。
+
+1. **[Releases](https://github.com/hatake716/CCFA/releases)** から [`CCFA-v1.0.0-debug.apk`](https://github.com/hatake716/CCFA/releases/latest) をダウンロード
+2. ブラウザやファイルマネージャーから APK を開き、必要なら「この提供元のアプリを許可」を有効にしてインストール
+3. 起動後、必要に応じてストレージ権限を設定
 
 > [!TIP]
 > ダウンロード後、Release ページに併記された `.sha256` の値と、端末上のファイルの SHA-256 を照合すると、ファイルの完全性を確認できます。
 
-### 2. APKのインストールを許可
-
-ブラウザやファイルマネージャーから APK を開きます。必要な場合は Android 設定で「この提供元のアプリを許可」を有効にしてインストールします。
-
 > [!NOTE]
-> 配布バイナリは開発時の **debug 署名のサイドロードビルド** です。将来のリリースが専用の署名鍵へ切り替わる場合、Android の仕様上、一度アンインストールしてから新しいリリースを導入する必要が生じることがあります。
-
-### 3. CCFAを起動
-
-アプリを起動したら、必要に応じてストレージ権限を設定します。
+> サイドロード版は開発時の **debug 署名ビルド** で、Google Play 版とはパッケージ名も署名も異なる別アプリです。両者は併存できますが、相互のデータ引き継ぎはありません。
 
 ---
 
@@ -175,10 +183,7 @@ GitHub の **[Releases](https://github.com/hatake716/CCFA/releases)** から最�
 
 ### ステップ1 — 初期Linux環境を作成
 
-ホーム画面の **「初回セットアップ」** から進めます。
-
-1. **「1. ストレージ権限を設定」** を押し、必要に応じて権限を許可します。
-2. **「2. 初期Linux環境を作成」** を押します。
+ホーム画面の **「初回セットアップ」→「初期Linux環境を作成」** を押します（Google Play 版ではストレージ権限の設定は不要です）。
 
 セットアップは次の順に進みます。
 
@@ -212,7 +217,7 @@ PRoot起動テスト
 
 Linux 側の **`/workspace`** は、コンテナを削除しても残る共有作業領域です。ここに Git リポジトリやプロジェクトを置いて作業します。
 
-Android 側のファイルとやり取りしたい場合は、**「スマートフォンストレージ」→「共有設定を編集」** で設定した `/phone/` 以下を利用します。
+Android 側のファイルとやり取りしたい場合は、**「共有フォルダを設定・同期」** で SAF フォルダを選択し、同期後に `/workspace/phone/<名前>` を利用します。
 
 ### コンテナを使い分ける
 
@@ -276,8 +281,8 @@ Android/Bionic PRoot
         │
         ▼
 Linux rootfs
-        ├─ /workspace          ← コンテナ間で共有・永続
-        └─ /phone/*            ← ユーザー設定可能な共有フォルダ
+        ├─ /workspace                ← コンテナ間で共有・永続
+        └─ /workspace/phone/<名前>   ← SAFで選んだAndroidフォルダとミラー同期
 ```
 
 詳しくは [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) を参照してください。
@@ -298,12 +303,14 @@ Linux rootfs
 ```bash
 bash scripts/prepare-termux-android-proot.sh
 bash scripts/prepare-distribution-legal.sh
-gradle :app:assembleDebug
+gradle :app:assembleDebug        # デバッグAPK
+gradle :app:bundleRelease        # Google Play 提出用の署名済みAAB（要 keystore.properties）
 ```
 
-現在の実装は app-private 領域の Linux userland を PRoot で実行するため、`compileSdk 36 / targetSdk 28 / minSdk 26` を使用しています。
+Google Play 版は `compileSdk 36 / targetSdk 36 / minSdk 26` を使用し、ネイティブ `.so` はすべて 16KiB ページアライン済みです。署名設定は [`keystore.properties.example`](keystore.properties.example) を、Play 提出手順は [`docs/PLAY-RELEASE.md`](docs/PLAY-RELEASE.md) を参照してください。
 
-リリースは、`v*` タグを push すると [`Publish Release`](.github/workflows/publish-release.yml) ワークフローが、公開ソースから配布用 APK を再現ビルドし、SHA-256 を計算して GitHub Release を作成します。
+- サイドロード向けの GitHub Release は、`v*` タグを push すると [`Publish Release`](.github/workflows/publish-release.yml) が公開ソースから APK を再現ビルドして作成します。
+- Play 向けの署名済み AAB は [`Play Release Bundle`](.github/workflows/play-release.yml) ワークフロー（`workflow_dispatch`）でも生成できます。
 
 ---
 

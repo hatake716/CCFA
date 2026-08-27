@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>CCFA store asset generator</title>
+<!--
+  Google Play ストア掲載素材ジェネレータ。
+  このファイルをブラウザで開くと icon-512.png と feature-graphic-1024x500.png を
+  再生成できる（描画完了後にダウンロードリンクが表示される）。
+  マスコットは app/src/main/res/drawable/ic_launcher_foreground.xml の SVG 変換、
+  配色・フォントは docs/index.html のデザイントークンに合わせている。
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=JetBrains+Mono:wght@500&display=swap">
+<style>body{background:#333;color:#eee;font-family:sans-serif}canvas{border:1px solid #666;display:block;margin:10px 0;max-width:100%}</style>
+</head>
+<body>
+<div id="status">rendering...</div>
+<canvas id="icon" width="512" height="512"></canvas>
+<canvas id="feature" width="1024" height="500"></canvas>
+
+<!-- マスコット: app/src/main/res/drawable/ic_launcher_foreground.xml の忠実な SVG 変換 -->
+<script type="text/plain" id="mascot-svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <path fill="#D9C4A4" d="M34,39 C35,29 43,23 54,23 C65,23 73,29 74,39 L34,39 Z"/>
+  <path stroke="#D9C4A4" stroke-width="3.2" stroke-linecap="round" fill="none" d="M42,26 L37,18"/>
+  <path stroke="#D9C4A4" stroke-width="3.2" stroke-linecap="round" fill="none" d="M66,26 L71,18"/>
+  <path fill="#F4F1EA" d="M43,31 m-2.2,0 a2.2,2.2 0,1 0,4.4 0 a2.2,2.2 0,1 0,-4.4 0"/>
+  <path fill="#F4F1EA" d="M65,31 m-2.2,0 a2.2,2.2 0,1 0,4.4 0 a2.2,2.2 0,1 0,-4.4 0"/>
+  <path fill="#C96442" d="M25,58 Q25,53 30,53 L78,53 Q83,53 83,58 L83,75 Q83,80 78,80 L30,80 Q25,80 25,75 Z"/>
+  <path fill="#B95839" d="M27,76 L81,76 L81,87 Q81,91 77,91 L31,91 Q27,91 27,87 Z"/>
+  <path fill="#8F422F" d="M35,69 h2 v6 h-2 z M42,69 h2 v6 h-2 z M49,69 h2 v6 h-2 z M56,69 h2 v6 h-2 z"/>
+  <path fill="#8F422F" d="M35,82 h2 v5 h-2 z M42,82 h2 v5 h-2 z M49,82 h2 v5 h-2 z M56,82 h2 v5 h-2 z"/>
+  <path fill="#2B2927" d="M24,39 Q24,34 29,34 L79,34 Q84,34 84,39 L84,67 Q84,72 79,72 L29,72 Q24,72 24,67 Z"/>
+  <path fill="#C96442" d="M27,39 Q27,37 30,37 L78,37 Q81,37 81,39 L81,45 L27,45 Z"/>
+  <path fill="#3A342F" d="M32,41 m-1.6,0 a1.6,1.6 0,1 0,3.2 0 a1.6,1.6 0,1 0,-3.2 0"/>
+  <path fill="#3A342F" d="M38,41 m-1.6,0 a1.6,1.6 0,1 0,3.2 0 a1.6,1.6 0,1 0,-3.2 0"/>
+  <path fill="#3A342F" d="M44,41 m-1.6,0 a1.6,1.6 0,1 0,3.2 0 a1.6,1.6 0,1 0,-3.2 0"/>
+  <path stroke="#F4EFE6" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" fill="none" d="M37,52 L45,59 L37,66"/>
+  <path stroke="#F4EFE6" stroke-width="4.2" stroke-linecap="round" fill="none" d="M51,66 L61,66"/>
+</svg>
+</script>
+
+<script>
+const status = (m) => document.getElementById("status").textContent = m;
+
+function loadMascot() {
+  return new Promise((resolve, reject) => {
+    const svg = document.getElementById("mascot-svg").textContent.trim();
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+  });
+}
+
+async function post(name, canvas) {
+  // scripts/ 側の保存サーバー経由なら /save に POST、単体で開いた場合は
+  // ダウンロードリンクを生成する。
+  try {
+    const r = await fetch("/save?name=" + name, { method: "POST", body: canvas.toDataURL("image/png") });
+    if (!r.ok) throw new Error("save failed: " + name);
+  } catch (e) {
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = name;
+    a.textContent = "download " + name;
+    a.style.cssText = "display:block;color:#9fd9a0";
+    document.body.appendChild(a);
+  }
+}
+
+function drawIcon(mascot) {
+  const c = document.getElementById("icon"), ctx = c.getContext("2d");
+  ctx.fillStyle = "#F4F1EA";                       // ic_launcher_background と同色
+  ctx.fillRect(0, 0, 512, 512);
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(mascot, 0, 0, 512, 512);           // 108dp ビューポートを全面へ
+  return c;
+}
+
+function drawFeature(mascot) {
+  const c = document.getElementById("feature"), ctx = c.getContext("2d");
+  // 背景: サイトのダークground + ごく薄いテラコッタのグロー
+  ctx.fillStyle = "#14120F";
+  ctx.fillRect(0, 0, 1024, 500);
+  const glow = ctx.createRadialGradient(250, 260, 40, 250, 260, 420);
+  glow.addColorStop(0, "rgba(201,100,66,0.16)");
+  glow.addColorStop(1, "rgba(201,100,66,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, 1024, 500);
+
+  // マスコット(左)
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(mascot, 62, 76, 348, 348);
+
+  // テキストブロック: x=468 起点、右マージン 64px を確保
+  const tx = 468, maxW = 1024 - tx - 64;
+
+  // ブランドドット + タイトル
+  ctx.fillStyle = "#C96442";
+  ctx.beginPath(); ctx.arc(tx + 12, 198, 13, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#F4EFE6";
+  ctx.font = '900 116px "Zen Kaku Gothic New", sans-serif';
+  ctx.textBaseline = "middle";
+  ctx.fillText("CCFA", tx + 42, 205);
+
+  // タグライン(はみ出す場合はフォントを自動縮小)
+  ctx.fillStyle = "#D9D2C6";
+  let tagSize = 38;
+  const tagline = "日本語入力対応 Linuxコンテナ";
+  ctx.font = `700 ${tagSize}px "Zen Kaku Gothic New", sans-serif`;
+  while (ctx.measureText(tagline).width > maxW && tagSize > 24) {
+    tagSize -= 1;
+    ctx.font = `700 ${tagSize}px "Zen Kaku Gothic New", sans-serif`;
+  }
+  ctx.fillText(tagline, tx, 295);
+
+  // ターミナル風ワンライナー
+  ctx.font = '500 25px "JetBrains Mono", monospace';
+  ctx.fillStyle = "#9FD9A0";
+  ctx.fillText("$", tx + 2, 362);
+  ctx.fillStyle = "#A79E92";
+  ctx.font = '700 25px "Zen Kaku Gothic New", sans-serif';
+  ctx.fillText("root不要・外部アプリ不要・arm64", tx + 28, 362, maxW - 28);
+  return c;
+}
+
+(async () => {
+  try {
+    status("loading fonts...");
+    // Google Fonts の @font-face 登録前に load() が走ると空解決するため、
+    // measureText がフォールバックと変わるまで待つ（レース対策）。
+    const probe = document.createElement("canvas").getContext("2d");
+    const mw = (f, t) => { probe.font = f; return probe.measureText(t).width; };
+    for (let i = 0; i < 40; i++) {
+      await Promise.all([
+        document.fonts.load('900 118px "Zen Kaku Gothic New"', "CCFA"),
+        document.fonts.load('700 40px "Zen Kaku Gothic New"', "日本語入力対応 Linuxコンテナ root不要・外部アプリ不要・arm64"),
+        document.fonts.load('500 26px "JetBrains Mono"', "$ ~"),
+      ]);
+      await document.fonts.ready;
+      if (mw('900 118px "Zen Kaku Gothic New"', "CCFA") !== mw('900 118px sans-serif', "CCFA")) break;
+      await new Promise(r => setTimeout(r, 250));
+    }
+    status("loading mascot...");
+    const mascot = await loadMascot();
+    status("drawing...");
+    await post("icon-512.png", drawIcon(mascot));
+    await post("feature-graphic-1024x500.png", drawFeature(mascot));
+    const zk = document.fonts.check('900 116px "Zen Kaku Gothic New"');
+    const jm = document.fonts.check('500 25px "JetBrains Mono"');
+    status(`DONE zk=${zk} jm=${jm}`);
+    document.title = `DONE zk=${zk} jm=${jm}`;
+  } catch (e) {
+    status("ERROR: " + e);
+    document.title = "ERROR";
+  }
+})();
+</script>
+</body>
+</html>
