@@ -9,6 +9,23 @@ trap 'rm -rf "$WORK"' EXIT
 TERMUX_REPO="https://packages.termux.dev/apt/termux-main"
 INDEX_BASE="$TERMUX_REPO/dists/stable/main/binary-aarch64/Packages"
 
+# -----------------------------------------------------------------------------
+# 同梱ランタイムのバージョン固定（GPL corresponding source 整合性のため）
+#
+# APK に同梱するバイナリと assets/legal/sources/ の対応ソースは必ず同一
+# バージョンでなければならない。Termux stable が新版へ進んだ場合、ここで
+# 意図的にビルドを失敗させ、静かなバージョンドリフトを防ぐ。
+#
+# 更新時は次もすべて同じ版へ揃えること:
+#   - scripts/prepare-distribution-legal.sh （対応ソース URL / SHA-256）
+#   - app/build.gradle.kts （verifyDistributionLegal の required リスト）
+#   - .github/workflows/android-ci.yml / publish-release.yml （APK 検証 grep）
+#   - THIRD_PARTY_NOTICES.md / docs/PROOT-SOURCE-OFFER.md
+# -----------------------------------------------------------------------------
+PROOT_VERSION="5.1.107.92"
+LIBANDROID_SHMEM_VERSION="0.7"
+LIBTALLOC_VERSION="2.4.3"
+
 for tool in curl dpkg-deb python3 patchelf readelf file sha256sum; do
   command -v "$tool" >/dev/null 2>&1 || {
     echo "Missing build tool: $tool" >&2
@@ -80,6 +97,7 @@ PY
 
 download_package() {
   local package="$1"
+  local expected_version="$2"
   local dest="$WORK/$package"
   mkdir -p "$dest"
 
@@ -88,6 +106,18 @@ download_package() {
   IFS=$'\t' read -r filename sha version <<< "$record"
   deb="$WORK/${package}.deb"
 
+  if [[ "$version" != "$expected_version" ]]; then
+    {
+      echo "ERROR: Termux stable の $package は $version ですが、CCFA は $expected_version に固定しています。"
+      echo "同梱バイナリと対応ソース (GPL corresponding source) のバージョンが食い違うため中断します。"
+      echo "対応: このスクリプト冒頭のバージョン固定を $version へ更新し、"
+      echo "      scripts/prepare-distribution-legal.sh の対応ソース URL / SHA-256、"
+      echo "      app/build.gradle.kts・.github/workflows/*.yml・THIRD_PARTY_NOTICES.md・"
+      echo "      docs/PROOT-SOURCE-OFFER.md の参照もすべて同じ版へ揃えてください。"
+    } >&2
+    exit 1
+  fi
+
   echo "Fetching $package $version"
   curl -fL --retry 3 --retry-delay 2 "$TERMUX_REPO/$filename" -o "$deb"
   echo "$sha  $deb" | sha256sum -c -
@@ -95,9 +125,9 @@ download_package() {
   printf '%s\t%s\t%s\n' "$package" "$version" "$sha" >> "$WORK/runtime-packages.tsv"
 }
 
-download_package proot
-download_package libandroid-shmem
-download_package libtalloc
+download_package proot "$PROOT_VERSION"
+download_package libandroid-shmem "$LIBANDROID_SHMEM_VERSION"
+download_package libtalloc "$LIBTALLOC_VERSION"
 
 PREFIX="data/data/com.termux/files/usr"
 PROOT_SRC="$WORK/proot/$PREFIX/bin/proot"

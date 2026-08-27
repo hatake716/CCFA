@@ -6,8 +6,15 @@ LEGAL="$ROOT/app/src/main/assets/legal"
 LICENSES="$LEGAL/licenses"
 SOURCES="$LEGAL/sources"
 RECIPES="$SOURCES/termux-build-recipes"
-TERMUX_PACKAGES_COMMIT="5dac893779dc6da03dac1d797aa4bd03a1cc0494"
+TERMUX_PACKAGES_COMMIT="08b49b3ce00b1e14a3a0365200f30e50f8dfafe1"
+# scripts/prepare-termux-android-proot.sh の PROOT_VERSION と必ず一致させること
+# （同梱バイナリと対応ソースの GPL 整合性）。
+PROOT_SOURCE_VERSION="5.1.107.92"
 mkdir -p "$LICENSES" "$SOURCES" "$RECIPES"
+
+# 過去バージョンの対応ソース zip が残っていると、ローカルの増分ビルドで
+# 新旧両方の zip が APK に同梱されてしまうため、対象版以外を削除する。
+find "$SOURCES" -maxdepth 1 -name 'proot-v*.zip' ! -name "proot-v${PROOT_SOURCE_VERSION}.zip" -delete
 
 fetch() {
   local url="$1" out="$2"
@@ -41,8 +48,8 @@ fetch "https://raw.githubusercontent.com/apache/commons-codec/rel/commons-codec-
 fetch "https://raw.githubusercontent.com/apache/commons-io/rel/commons-io-2.16.1/NOTICE.txt" "$LICENSES/COMMONS-IO-NOTICE.txt"
 fetch "https://raw.githubusercontent.com/apache/commons-lang/rel/commons-lang-3.16.0/NOTICE.txt" "$LICENSES/COMMONS-LANG3-NOTICE.txt"
 
-fetch "https://github.com/termux/proot/archive/v5.1.107.91.zip" "$SOURCES/proot-v5.1.107.91.zip"
-verify_sha256 "a7bc2fab34bf9a39073e8291f08a662e848c61a67494e59f5f84f5ca10690128" "$SOURCES/proot-v5.1.107.91.zip"
+fetch "https://github.com/termux/proot/archive/v${PROOT_SOURCE_VERSION}.zip" "$SOURCES/proot-v${PROOT_SOURCE_VERSION}.zip"
+verify_sha256 "29385d1ddb619a9c4449ab512bfd55032034b22f724ddf98fc95ff300ea32135" "$SOURCES/proot-v${PROOT_SOURCE_VERSION}.zip"
 
 fetch "https://github.com/termux/libandroid-shmem/archive/refs/tags/v0.7.tar.gz" "$SOURCES/libandroid-shmem-v0.7.tar.gz.source"
 verify_sha256 "1e5ff8459bc0a8c229dd8a94b27d119987e09ef3414331c2b5ebfff20b98e867" "$SOURCES/libandroid-shmem-v0.7.tar.gz.source"
