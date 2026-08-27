@@ -2,6 +2,7 @@ package io.github.hatake716.claudecodeandroid
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
@@ -22,6 +23,9 @@ class MainActivity : Activity() {
     companion object {
         private const val REQUEST_RUN_COMMAND_PERMISSION = 716
 
+        private const val TERMUX_RELEASES_URL =
+            "https://github.com/termux/termux-app/releases"
+
         private val ENABLE_EXTERNAL_APPS_COMMAND = """
             mkdir -p ~/.termux
             touch ~/.termux/termux.properties
@@ -36,15 +40,31 @@ class MainActivity : Activity() {
 
     private lateinit var statusText: TextView
 
+    /**
+     * Set once the user has been shown the system permission dialog. Lets us tell
+     * "not asked yet" apart from "permanently denied", which otherwise look
+     * identical through shouldShowRequestPermissionRationale().
+     */
+    private var permissionRequested = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        permissionRequested =
+            savedInstanceState?.getBoolean(::permissionRequested.name, false) ?: false
         setContentView(buildContentView())
         refreshStatus()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(::permissionRequested.name, permissionRequested)
+    }
+
     override fun onResume() {
         super.onResume()
-        if (::statusText.isInitialized) refreshStatus()
+        // statusText is always initialised by onCreate() before onResume() runs,
+        // so refreshing unconditionally is safe here.
+        refreshStatus()
     }
 
     private fun buildContentView(): View {
@@ -60,7 +80,7 @@ class MainActivity : Activity() {
         })
 
         content.addView(TextView(this).apply {
-            text = "Termux + Ubuntu 24.04 上で Claude Code を動かす非公式ランチャー"
+            text = getString(R.string.app_tagline)
             textSize = 16f
             setPadding(0, dp(8), 0, dp(20))
         })
@@ -68,127 +88,220 @@ class MainActivity : Activity() {
         statusText = TextView(this).apply {
             textSize = 15f
             setPadding(dp(14), dp(14), dp(14), dp(14))
-            setBackgroundColor(0x11000000)
+            setBackgroundColor(getColor(R.color.status_panel_background))
         }
         content.addView(statusText, matchWidth())
 
-        content.addView(sectionTitle("初回セットアップ"))
-        content.addView(actionButton("1. Termux を開く") { openTermux() }, buttonParams())
-        content.addView(actionButton("2. 設定コマンドをコピー") { copyExternalAppsCommand() }, buttonParams())
-        content.addView(helpText("コピーしたコマンドを Termux に貼り付けて実行し、allow-external-apps=true を有効にします。"))
-        content.addView(actionButton("3. RUN_COMMAND 権限を許可") { requestRunCommandPermission() }, buttonParams())
-        content.addView(actionButton("4. Linux + Claude Code をセットアップ") {
-            runAssetScript("bootstrap-termux.sh")
-        }, buttonParams())
+        content.addView(sectionTitle(getString(R.string.section_setup)))
+        content.addView(
+            actionButton(getString(R.string.action_open_termux)) { openTermux() },
+            buttonParams()
+        )
+        content.addView(
+            actionButton(getString(R.string.action_copy_command)) { copyExternalAppsCommand() },
+            buttonParams()
+        )
+        content.addView(helpText(getString(R.string.help_copy_command)))
+        content.addView(
+            actionButton(getString(R.string.action_request_permission)) {
+                requestRunCommandPermission()
+            },
+            buttonParams()
+        )
+        content.addView(
+            actionButton(getString(R.string.action_bootstrap)) {
+                runAssetScript("bootstrap-termux.sh", getString(R.string.action_bootstrap))
+            },
+            buttonParams()
+        )
 
-        content.addView(sectionTitle("Claude Code"))
-        content.addView(actionButton("Claude Code を起動") {
-            runAssetScript("launch-claude.sh")
-        }, buttonParams())
-        content.addView(helpText("Termux の ~/claude-projects が Ubuntu の /workspace として開きます。"))
+        content.addView(sectionTitle(getString(R.string.section_claude)))
+        content.addView(
+            actionButton(getString(R.string.action_launch)) {
+                runAssetScript("launch-claude.sh", getString(R.string.action_launch))
+            },
+            buttonParams()
+        )
+        content.addView(helpText(getString(R.string.help_workspace)))
 
-        content.addView(sectionTitle("トラブルシューティング"))
-        content.addView(actionButton("Android のアプリ設定を開く") { openOwnAppSettings() }, buttonParams())
-        content.addView(helpText("RUN_COMMAND 権限が表示されない場合は、Termux がインストール済みか確認してから再度開いてください。"))
+        content.addView(sectionTitle(getString(R.string.section_troubleshooting)))
+        content.addView(
+            actionButton(getString(R.string.action_open_app_settings)) { openOwnAppSettings() },
+            buttonParams()
+        )
+        content.addView(helpText(getString(R.string.help_troubleshooting)))
 
         return ScrollView(this).apply { addView(content) }
     }
 
     private fun refreshStatus() {
         val termuxInstalled = TermuxRunner.isInstalled(this)
-        val permissionGranted = termuxInstalled &&
-            checkSelfPermission(TermuxRunner.RUN_COMMAND_PERMISSION) == PackageManager.PERMISSION_GRANTED
+        val permissionGranted = termuxInstalled && hasRunCommandPermission()
 
         statusText.text = buildString {
-            appendLine("Termux: ${if (termuxInstalled) "✓ インストール済み" else "✗ 未検出"}")
-            appendLine("RUN_COMMAND: ${if (permissionGranted) "✓ 許可済み" else "✗ 未許可"}")
-            append("allow-external-apps: Termux 側で一度設定が必要")
+            appendLine(
+                getString(
+                    R.string.status_termux,
+                    getString(
+                        if (termuxInstalled) R.string.status_installed
+                        else R.string.status_not_found
+                    )
+                )
+            )
+            appendLine(
+                getString(
+                    R.string.status_run_command,
+                    getString(
+                        if (permissionGranted) R.string.status_granted
+                        else R.string.status_denied
+                    )
+                )
+            )
+            append(getString(R.string.status_external_apps))
         }
     }
 
+    private fun hasRunCommandPermission(): Boolean =
+        checkSelfPermission(TermuxRunner.RUN_COMMAND_PERMISSION) ==
+            PackageManager.PERMISSION_GRANTED
+
     private fun openTermux() {
-        val launchIntent = packageManager.getLaunchIntentForPackage(TermuxRunner.TERMUX_PACKAGE)
+        val launchIntent =
+            packageManager.getLaunchIntentForPackage(TermuxRunner.TERMUX_PACKAGE)
         if (launchIntent != null) {
-            startActivity(launchIntent)
-        } else {
-            AlertDialog.Builder(this)
-                .setTitle("Termux が見つかりません")
-                .setMessage("Termux をインストールして一度起動してください。")
-                .setPositiveButton("Termux Releases を開く") { _, _ ->
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/termux/termux-app/releases")))
-                }
-                .setNegativeButton("閉じる", null)
-                .show()
+            // getLaunchIntentForPackage() can still fail if Termux is disabled
+            // or was uninstalled between the lookup and the call.
+            if (!safeStartActivity(launchIntent, R.string.toast_termux_not_found)) {
+                showTermuxMissingDialog()
+            }
+            return
         }
+        showTermuxMissingDialog()
+    }
+
+    private fun showTermuxMissingDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.dialog_termux_missing_title)
+            .setMessage(R.string.dialog_termux_missing_message)
+            .setPositiveButton(R.string.dialog_open_termux_releases) { _, _ ->
+                safeStartActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse(TERMUX_RELEASES_URL)),
+                    R.string.error_no_browser
+                )
+            }
+            .setNegativeButton(R.string.dialog_close, null)
+            .show()
     }
 
     private fun copyExternalAppsCommand() {
         val clipboard = getSystemService(ClipboardManager::class.java)
-        clipboard.setPrimaryClip(ClipData.newPlainText("Termux allow-external-apps setup", ENABLE_EXTERNAL_APPS_COMMAND))
-        Toast.makeText(this, "Termux 設定コマンドをコピーしました", Toast.LENGTH_SHORT).show()
+        if (clipboard == null) {
+            Toast.makeText(this, R.string.error_settings_unavailable, Toast.LENGTH_LONG).show()
+            return
+        }
+        clipboard.setPrimaryClip(
+            ClipData.newPlainText(
+                getString(R.string.clip_label),
+                ENABLE_EXTERNAL_APPS_COMMAND
+            )
+        )
+        Toast.makeText(this, R.string.toast_command_copied, Toast.LENGTH_SHORT).show()
     }
 
     private fun requestRunCommandPermission() {
         if (!TermuxRunner.isInstalled(this)) {
-            Toast.makeText(this, "先に Termux をインストールしてください", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.toast_install_termux_first, Toast.LENGTH_LONG).show()
             return
         }
 
-        if (checkSelfPermission(TermuxRunner.RUN_COMMAND_PERMISSION) == PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "RUN_COMMAND 権限は許可済みです", Toast.LENGTH_SHORT).show()
+        if (hasRunCommandPermission()) {
+            Toast.makeText(this, R.string.toast_permission_already_granted, Toast.LENGTH_SHORT)
+                .show()
             return
         }
 
+        // Once the user picks "don't ask again" the system dialog never appears,
+        // so send them to app settings instead of silently doing nothing.
+        val permanentlyDenied = permissionRequested &&
+            !shouldShowRequestPermissionRationale(TermuxRunner.RUN_COMMAND_PERMISSION)
+        if (permanentlyDenied) {
+            AlertDialog.Builder(this)
+                .setTitle(R.string.permission_rationale_title)
+                .setMessage(R.string.permission_rationale_message)
+                .setPositiveButton(R.string.dialog_open_settings) { _, _ -> openOwnAppSettings() }
+                .setNegativeButton(R.string.dialog_close, null)
+                .show()
+            return
+        }
+
+        permissionRequested = true
         requestPermissions(
             arrayOf(TermuxRunner.RUN_COMMAND_PERMISSION),
             REQUEST_RUN_COMMAND_PERMISSION
         )
     }
 
-    private fun runAssetScript(assetName: String) {
+    private fun runAssetScript(assetName: String, label: String) {
         if (!TermuxRunner.isInstalled(this)) {
-            Toast.makeText(this, "Termux が見つかりません", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.toast_termux_not_found, Toast.LENGTH_LONG).show()
             return
         }
 
-        if (checkSelfPermission(TermuxRunner.RUN_COMMAND_PERMISSION) != PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(this, "RUN_COMMAND 権限を先に許可してください", Toast.LENGTH_LONG).show()
+        if (!hasRunCommandPermission()) {
+            Toast.makeText(this, R.string.toast_permission_required_first, Toast.LENGTH_LONG)
+                .show()
             return
         }
 
         val script = runCatching {
             assets.open(assetName).bufferedReader().use { it.readText() }
         }.getOrElse {
-            showError("スクリプトを読み込めませんでした", it)
+            showError(getString(R.string.error_script_read_failed), it)
             return
         }
 
-        TermuxRunner.runForegroundScript(this, script)
+        TermuxRunner.runForegroundScript(this, script, label)
             .onSuccess {
-                Toast.makeText(this, "Termux で処理を開始しました", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.toast_started, Toast.LENGTH_SHORT).show()
             }
             .onFailure {
-                showError(
-                    "Termux でコマンドを開始できませんでした。allow-external-apps=true と RUN_COMMAND 権限を確認してください。",
-                    it
-                )
+                showError(getString(R.string.error_run_command_failed), it)
             }
     }
 
     private fun openOwnAppSettings() {
-        startActivity(
+        safeStartActivity(
             Intent(
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:$packageName")
-            )
+                Uri.fromParts("package", packageName, null)
+            ),
+            R.string.error_settings_unavailable
         )
     }
 
+    /**
+     * startActivity() throws when nothing on the device can handle the intent
+     * (common for ACTION_VIEW on devices with no browser). Report it instead of
+     * crashing.
+     */
+    private fun safeStartActivity(intent: Intent, errorMessageRes: Int): Boolean = try {
+        startActivity(intent)
+        true
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(this, errorMessageRes, Toast.LENGTH_LONG).show()
+        false
+    } catch (_: SecurityException) {
+        Toast.makeText(this, errorMessageRes, Toast.LENGTH_LONG).show()
+        false
+    }
+
     private fun showError(message: String, throwable: Throwable) {
+        val detail = throwable.message?.takeIf { it.isNotBlank() }
+            ?: throwable.javaClass.simpleName
         AlertDialog.Builder(this)
-            .setTitle("エラー")
-            .setMessage("$message\n\n${throwable.message ?: throwable.javaClass.simpleName}")
-            .setPositiveButton("閉じる", null)
+            .setTitle(R.string.dialog_error_title)
+            .setMessage("$message\n\n$detail")
+            .setPositiveButton(R.string.dialog_close, null)
             .show()
     }
 
@@ -226,14 +339,18 @@ class MainActivity : Activity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_RUN_COMMAND_PERMISSION) {
-            refreshStatus()
-            val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
-            Toast.makeText(
-                this,
-                if (granted) "RUN_COMMAND 権限を許可しました" else "RUN_COMMAND 権限が必要です",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
+        if (requestCode != REQUEST_RUN_COMMAND_PERMISSION) return
+
+        refreshStatus()
+        // An empty grantResults means the request was cancelled; treat it as denied
+        // rather than indexing into the array and crashing.
+        val granted = grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        Toast.makeText(
+            this,
+            if (granted) R.string.toast_permission_granted
+            else R.string.toast_permission_denied,
+            Toast.LENGTH_SHORT
+        ).show()
     }
 }

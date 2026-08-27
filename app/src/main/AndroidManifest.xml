@@ -5,10 +5,20 @@
 
     <queries>
         <package android:name="com.termux" />
+        <!-- Needed so openTermux()'s ACTION_VIEW fallback can resolve a browser
+             on API 30+ package-visibility filtering. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
     </queries>
 
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">

@@ -22,19 +22,34 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle 9.5.0
+      # Use the Gradle wrapper checked into the repo so CI and local builds
+      # never drift apart on the Gradle version.
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: "9.5.0"
 
       - name: Ensure Android SDK 37 is installed
-        run: "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37" "build-tools;36.0.0"
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-37" "build-tools;36.0.0"
+
+      - name: Lint
+        run: ./gradlew :app:lintRelease --stacktrace
 
       - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Build release bundle
+        run: ./gradlew :app:bundleRelease --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: claude-code-for-android-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-release.*

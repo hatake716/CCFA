@@ -1,4 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Claude Code for Android</string>
+    <string name="app_tagline">Termux + Ubuntu 24.04 上で Claude Code を動かす非公式ランチャー</string>
+
+    <string name="section_setup">初回セットアップ</string>
+    <string name="section_claude">Claude Code</string>
+    <string name="section_troubleshooting">トラブルシューティング</string>
+
+    <string name="action_open_termux">1. Termux を開く</string>
+    <string name="action_copy_command">2. 設定コマンドをコピー</string>
+    <string name="action_request_permission">3. RUN_COMMAND 権限を許可</string>
+    <string name="action_bootstrap">4. Linux + Claude Code をセットアップ</string>
+    <string name="action_launch">Claude Code を起動</string>
+    <string name="action_open_app_settings">Android のアプリ設定を開く</string>
+
+    <string name="help_copy_command">コピーしたコマンドを Termux に貼り付けて実行し、allow-external-apps=true を有効にします。</string>
+    <string name="help_workspace">Termux の ~/claude-projects が Ubuntu の /workspace として開きます。</string>
+    <string name="help_troubleshooting">RUN_COMMAND 権限が表示されない場合は、Termux がインストール済みか確認してから再度開いてください。</string>
+
+    <string name="status_termux">Termux: %1$s</string>
+    <string name="status_run_command">RUN_COMMAND: %1$s</string>
+    <string name="status_external_apps">allow-external-apps: Termux 側で一度設定が必要</string>
+    <string name="status_installed">✓ インストール済み</string>
+    <string name="status_not_found">✗ 未検出</string>
+    <string name="status_granted">✓ 許可済み</string>
+    <string name="status_denied">✗ 未許可</string>
+
+    <string name="toast_command_copied">Termux 設定コマンドをコピーしました</string>
+    <string name="toast_install_termux_first">先に Termux をインストールしてください</string>
+    <string name="toast_permission_already_granted">RUN_COMMAND 権限は許可済みです</string>
+    <string name="toast_termux_not_found">Termux が見つかりません</string>
+    <string name="toast_permission_required_first">RUN_COMMAND 権限を先に許可してください</string>
+    <string name="toast_started">Termux で処理を開始しました</string>
+    <string name="toast_permission_granted">RUN_COMMAND 権限を許可しました</string>
+    <string name="toast_permission_denied">RUN_COMMAND 権限が必要です</string>
+
+    <string name="dialog_termux_missing_title">Termux が見つかりません</string>
+    <string name="dialog_termux_missing_message">Termux をインストールして一度起動してください。</string>
+    <string name="dialog_open_termux_releases">Termux Releases を開く</string>
+    <string name="dialog_close">閉じる</string>
+    <string name="dialog_error_title">エラー</string>
+
+    <string name="error_script_read_failed">スクリプトを読み込めませんでした</string>
+    <string name="error_run_command_failed">Termux でコマンドを開始できませんでした。allow-external-apps=true と RUN_COMMAND 権限を確認してください。</string>
+    <string name="error_no_browser">ブラウザーが見つかりませんでした。</string>
+    <string name="error_settings_unavailable">アプリ設定画面を開けませんでした。</string>
+
+    <string name="clip_label">Termux allow-external-apps setup</string>
+
+    <string name="permission_rationale_title">RUN_COMMAND 権限について</string>
+    <string name="permission_rationale_message">Termux でセットアップと Claude Code の起動を行うために、この権限が必要です。権限を「今後表示しない」にした場合は、Android のアプリ設定から手動で許可してください。</string>
+    <string name="dialog_open_settings">設定を開く</string>
 </resources>
